@@ -1,0 +1,24 @@
+@import '@/styles/variables.scss';
+
+.autocomplete {
+  width: 100%;
+
+  &.ant-select-single {
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      width: 0;
+    }
+  }
+}
+
+.loading-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+
+  .ant-spin {
+    color: $primary-color-2 !important;
+  }
+}

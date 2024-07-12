@@ -1,0 +1,36 @@
+{
+  "id": "invest-tester",
+  "name": "InvestTester",
+  "short_name": "InvestTester",
+  "description": "InvestTester | Simulate investment portfolios and algorithmic trading strategies",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#141414",
+  "theme_color": "#141414",
+  "orientation": "any",
+  "categories": [
+    "algo-trading",
+    "finance",
+    "backtest",
+    "stock-market"
+  ],
+  "icons": [
+    {
+      "src": "/logo/logo64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo/logo256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo/logo512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

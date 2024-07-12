@@ -1,0 +1,27 @@
+/*
+xs: < 576px
+sm: < 768px
+md: < 992px
+lg: < 1200px
+xl: < 1600px
+xxl: >= 1600px
+*/
+
+$size-xs: 576px;
+$size-sm: 768px;
+$size-md: 992px;
+$size-lg: 1200px;
+$size-xl: 1600px;
+$size-xxl: 1600px;
+
+$primary-color: #004AE9;
+$primary-color-2: darken($primary-color, 0.85);
+$primary-color-3: lighten($primary-color, 0.65);
+$txt-color: #ffffff;
+$border-color-base: #434343;
+$component-background: #141414;
+$body-background: #050505;
+$body-secundary: #303030;
+$item-active-bg: darken($primary-color, 0.65);
+$success: #389e0d;
+$error: #cf1322;

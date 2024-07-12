@@ -1,0 +1,44 @@
+services:
+    invest-tester:
+        container_name: invest-tester
+        image: invest-tester
+        restart: always
+        build:
+            context: ./
+            dockerfile: ./deploy/Dockerfile
+            args:
+                - ENV=${ENV}
+                - NODE_OPTIONS=${NODE_OPTIONS}
+                - PROTOCOL=${PROTOCOL}
+        ports:
+            - 80:80
+            - 443:443
+        environment:
+            - TZ=UTC
+        volumes:
+            - ${SSL_CERTIFICATES_VOLUME}:/etc/letsencrypt
+        networks:
+            - default
+        depends_on:
+            - dados-financeiros
+
+    dados-financeiros:
+        container_name: dados-financeiros
+        image: dados-financeiros
+        restart: always
+        build:
+            context: ../dados-financeiros/api
+            dockerfile: ./Dockerfile
+            args:
+                - ENV=${ENV}
+                - NODE_OPTIONS=${NODE_OPTIONS}
+        ports:
+            - 3000:3000
+        environment:
+            - TZ=UTC
+        networks:
+            - default
+
+networks:
+  default:
+    driver: bridge

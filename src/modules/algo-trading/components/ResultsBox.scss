@@ -1,0 +1,117 @@
+@import '@/styles/variables.scss';
+
+.tabs {
+  position: absolute;
+  left: 0;
+  right: 0;
+
+  .ant-tabs-nav-list {
+    margin-left: 13px;
+
+    @media (min-width: $size-md) {
+      margin-left: 0;
+    }
+
+    .ant-tabs-tab {
+      &:nth-last-child(2) {
+        margin-right: 25px;
+  
+        @media (min-width: $size-md) {
+          margin-right: 0;
+        }
+      }
+    }
+  }
+}
+
+.output-box {
+  min-height: 275px !important;
+  height: 500px !important;
+  border: 5px solid $body-secundary !important;
+
+  @media (min-width: $size-md) {
+    height: 100% !important;
+  }
+}
+
+div.output-box {
+  display: flex;
+  position: relative;
+
+  .processing {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+
+    .processing-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-top: 10px;
+
+      * {
+        font-size: 60px;
+      }
+
+      .ant-spin {
+        color: $primary-color-2 !important;
+      }
+    }
+  }
+
+  .algo-summary {
+    display: grid;
+    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+
+    flex: 1;
+    margin-top: 45px;
+    padding: 1.5% 2%;
+    font-size: .95rem;
+    line-height: 1.4;
+
+    @media (min-width: $size-md) {
+      padding: 1.5% 5%;
+    }
+
+    &>div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.5;
+      font-size: .95rem;
+      padding: 0 2px;
+
+      &>div:first-child {
+        font-weight: bold;
+      }
+
+      &>div:last-child {
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .algo-chart {
+    flex: 1;
+    margin-top: 50px;
+    max-height: 215px !important;
+  
+    @media (min-width: $size-md) {
+      max-height: none !important;
+    }
+  }
+
+  .algo-output {
+    margin-top: 50px;
+    box-shadow: none;
+    width: 100%;
+    cursor: default;
+    resize: none;
+  }
+}

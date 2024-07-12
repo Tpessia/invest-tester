@@ -1,0 +1,10 @@
+.datePickerWrapper, 
+.datePickerWrapper > div.ant-picker-range, 
+.datePickerWrapper > div > div.ant-picker-input
+.datePickerWrapper > div > div.ant-picker-input input {
+   width: 100%;
+}
+
+.datePickerWrapper > div > div.ant-picker-input input {
+   text-align: center;
+}

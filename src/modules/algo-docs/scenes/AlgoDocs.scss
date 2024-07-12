@@ -1,0 +1,65 @@
+@import '@/styles/variables.scss';
+
+.docs {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    position: relative;
+    margin-left: 175px;
+
+    h1,h2,h3,h4,h5,h6 {
+        margin-top: 0 !important;
+    }
+
+    &.collapsed {
+        margin-left: 65px;
+
+        .ant-menu {
+            width: 55px;
+        }
+    }
+
+    @media (min-width: $size-md) {
+        margin-left: 175px;
+
+        &.collapsed {
+            margin-left: 30px;
+        }
+    }
+
+    .docs-menu {
+        overflow-y: auto;
+        position: fixed;
+        left: 0;
+        top: 64px;
+        bottom: 64px;
+        display: flex;
+        flex-direction: column;
+
+        .ant-menu {
+            overflow-y: auto;
+            min-height: 100%;
+            min-width: 150px;
+            border-bottom-right-radius: 15px;
+            border-right-color: $body-secundary;
+
+            @media (min-width: $size-md) {
+                min-width: 200px;
+            }
+
+            &.ant-menu-inline-collapsed {
+                min-width: auto;
+            }
+
+            .doc-icon {
+                svg {
+                    font-size: 20px;
+                }
+            }
+        }
+    }
+
+    .docs-content {
+        flex: 1;
+    }
+}

@@ -1,0 +1,344 @@
+import { formatCurrency, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@/modules/@utils';
+import useService from '@/modules/@utils/hooks/useService';
+import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
+import useThrottle from '@/modules/@utils/hooks/useThrottle';
+import ResultsBox from '@/modules/algo-trading/components/ResultsBox';
+import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
+import { AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
+import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
+import { AlgoMessages, AlgoStatus, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
+import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
+import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
+import DateRangePicker from '@core/components/DateRangePicker';
+import InfoPopover from '@core/components/InfoPopover';
+import InputAddon from '@core/components/InputAddon';
+import InputMask from '@core/components/InputMask';
+import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
+import { Globals } from '@core/modles/Globals';
+import { Button, Checkbox, Col, Row, Space } from 'antd';
+import dayjs from 'dayjs';
+import { useContext, useEffect } from 'react';
+import { NumericFormatProps } from 'react-number-format';
+import './Portfolio.scss';
+
+interface State {
+  inputs: {
+    assets: { assetCode: string, percentual: number }[];
+    initCash: number;
+    monthlyDeposits: number,
+    start: Date;
+    end: Date;
+    rebalance: boolean;
+    download: boolean;
+  };
+  status: AlgoStatus;
+  messages: AlgoMessages;
+  progress: number;
+  result?: AlgoResult;
+}
+
+const initState = (urlMode: UrlMode): State => ({
+  inputs: tryParseJson(localStorage.getItem(Globals.cache.portfolioInputs), jsonDateReviver) || {
+    assets: (Globals.inputs.assets[urlMode || Globals.inputs.mode]).map((a, i, arr) => ({ assetCode: a, percentual: i === arr.length - 1 ? 1 - (arr.length - 1) * +(1 / arr.length).toFixed(2) : +(1 / arr.length).toFixed(2) })),
+    initCash: 1000000,
+    monthlyDeposits: 0,
+    start: Globals.inputs.start,
+    end: Globals.inputs.end,
+    rebalance: false,
+    download: false,
+  },
+  status: 'stopped',
+  messages: initAlgoMessages(),
+  progress: 0,
+});
+
+const Portfolio: React.FC = () => {
+  // State
+
+  const globalContext = useContext(GlobalContext);
+  const [state, setState] = useStateImmutable(() => initState(globalContext.urlMode));
+
+  // Dependencies
+
+  const algoService = useService(AlgoService, svc => svc.init(s => setState({
+    status: { $set: s.status },
+    messages: { $set: s.messages },
+    progress: { $set: s.progress },
+  })));
+
+  // Effects
+
+  useEffect(useThrottle(() => {
+    localStorage.setItem(Globals.cache.portfolioInputs, JSON.stringify(state.inputs));
+  }, 1000, { leading: false }), [...Object.values(state.inputs)]);
+
+  // Values
+
+  const maskProps: NumericFormatProps = {
+    thousandSeparator: '.',
+    decimalSeparator: ',',
+    allowNegative: false,
+    fixedDecimalScale: true,
+    decimalScale: 2,
+  };
+
+  const hasResult = state.result != null || state.messages.warnings.concat(state.messages.warnings).length > 0;
+
+  // Callbacks
+
+  const handleReset = () => {
+    setState({ result: { $set: undefined }, messages: { $set: initAlgoMessages() } });
+  };
+
+  const handleStart = async () => {
+    handleReset();
+
+    try {
+      // Validate inputs
+
+      if (state.inputs.assets.length === 0) throw new Error('No assets selected');
+
+      const invalidAssetIndexes = state.inputs.assets.reduce((acc, val, i) => val.assetCode ? acc : [...acc, +i+1], [] as number[]);
+      if (invalidAssetIndexes.length) throw new Error('Invalid assetCodes at asset ' + invalidAssetIndexes.join(', '));
+
+      const invalidPercentIndexes = state.inputs.assets.reduce((acc, val, i) => !!val.percentual ? acc : [...acc, +i+1], [] as number[]);
+      if (invalidPercentIndexes.length) throw new Error('Invalid percentages at asset ' + invalidPercentIndexes.join(', '));
+
+      const totalPercent = state.inputs.assets.reduce((acc, val) => acc + val.percentual, 0);
+      if (totalPercent !== 1) throw new Error('Total percentage sum must be 100%');
+
+      // Start algo
+
+      const inputs: AlgoInputs = {
+        currency: globalContext.currency.currency,
+        assetCodes: state.inputs.assets.map(e => e.assetCode),
+        initCash: state.inputs.initCash,
+        start: state.inputs.start,
+        end: state.inputs.end,
+        enableLeverage: false,
+        initMargin: 0,
+        minMargin: 0,
+      };
+      const result = await algoService.init(s => setState({
+        status: { $set: s.status },
+        messages: { $set: s.messages },
+        // progress: { $set: s.progress },
+      })).start(inputs, async function () {
+        this.on('start', async (next) => {
+          this.state.prevDate = this.date;
+          next();
+        });
+
+        this.on('data', async (next) => {
+          const nextMonth = new Date(this.state.prevDate.getFullYear(), this.state.prevDate.getMonth() + 1, this.state.prevDate.getDate(), 0, 0, 0);
+          const isNewMonth = this.date.getTime() > nextMonth.getTime();
+
+          if (isNewMonth) {
+            this.state.prevDate = this.date;
+            if (state.inputs.monthlyDeposits) {
+              this.print(`Depositing: ${state.inputs.monthlyDeposits}`);
+              this.injectCash(state.inputs.monthlyDeposits);
+            }
+          }
+
+          const totalValue = this.portfolio.total;
+          const targetAssetValues = state.inputs.assets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * val.percentual }), {} as Record<string, any>);
+
+          let cash = this.portfolio.cash;
+          for (let i in this.assets) {
+            const asset = this.assets[i];
+            const portAsset = this.portfolio.assets[asset.assetCode];
+
+            const targetValue = targetAssetValues[asset.assetCode];
+            const currentValue = (portAsset?.value ?? 0) * (portAsset?.quantity ?? 0);
+
+            const diffAmount = targetValue - currentValue;
+            const diffAmountMin = Math.min(diffAmount, cash);
+
+            const diffQnt = diffAmountMin > 0 ? Math.floor(diffAmountMin / asset.value) : Math.ceil(diffAmountMin / asset.value);
+            const currency = globalContext.currencyOptions.find(e => e.currency === asset.currency)?.symbol ?? asset.currency ?? globalContext.currency.symbol;
+
+            if (diffQnt > 0) {
+              cash -= diffAmountMin;
+              const canBuy = state.inputs.rebalance || currentValue === 0;
+              if (canBuy) {
+                this.print(`[${asset.assetCode}] Buying ${diffQnt} x ${formatCurrency(asset.value, { prefix: `${currency} ` })}`);
+                this.buy(asset.assetCode, diffQnt);
+              }
+            } else if (diffQnt < 0) {
+              const canRebalance = state.inputs.rebalance && isNewMonth;
+              if (canRebalance) {
+                this.print(`[${asset.assetCode}] Rebalancing: ${diffQnt} x ${formatCurrency(asset.value, { prefix: `${currency} ` })}`);
+                this.sell(asset.assetCode, -diffQnt);
+              }
+            }
+          }
+          next();
+        });
+
+        this.on('end', async (next, result) => {
+          if (state.inputs.download) this.download(result, 'result');
+          next();
+        });
+
+        this.on('error', async (next, errors) => {
+          this.print('Error:', JSON.stringify(errors));
+          next();
+        });
+      });
+
+      console.log('result', result);
+      setState({ result: { $set: result } });
+    } catch (err: any) {
+      setState({ messages: { warnings: { $push: [getErrorMsg(err, globalContext.debug)] } }, status: { $set: 'error' } });
+    }
+  };
+
+  const handleStop = () => {
+    algoService.stop();
+  };
+
+  // Render
+
+  return (
+    <Row
+      className='portfolio' 
+      gutter={[
+        { xs: 0, sm: 0, md: 0, lg: 16 },
+        { xs: 30, sm: 30, md: 30, lg: 0 }
+      ]}
+    >
+      <Col className='portfolio-inputs' xs={24} lg={12}>
+        <Space.Compact>
+          <Row gutter={[{ xs: 8, sm: 16 }, { xs: 8, sm: 16 }]}>
+            <Col xs={24} sm={24} xl={12}>
+              <InputMask
+                type='text'
+                addonBefore='Balance'
+                maskProps={{
+                  ...maskProps,
+                  prefix: `${globalContext.currency.symbol} `,
+                  allowNegative: false,
+                  value: state.inputs.initCash,
+                  onValueChange: (values) => setState({ inputs: { initCash: { $set: +values.value } } }),
+                }}
+              />
+            </Col>
+            <Col xs={24} sm={24} xl={12}>
+              <InputMask
+                type='text'
+                addonBefore={<InfoPopover content='Deposits' popover='Monthly Deposits' />}
+                maskProps={{
+                  ...maskProps,
+                  prefix: `${globalContext.currency.symbol} `,
+                  allowNegative: false,
+                  value: state.inputs.monthlyDeposits,
+                  onValueChange: (values) => setState({ inputs: { monthlyDeposits: { $set: +values.value } } }),
+                }}
+              />
+            </Col>
+            <Col xs={24} sm={24} xl={12}>
+              <InputAddon addonBefore='Date'>
+                <DateRangePicker
+                  suffixIcon={null}
+                  allowClear={false}
+                  value={[
+                    dayjs(state.inputs.start),
+                    dayjs(state.inputs.end),
+                  ]}
+                  onChange={(dates, dateStrs) => setState({ inputs: {
+                    start: { $set: dates?.[0]?.toDate() ?? state.inputs.start },
+                    end: { $set: dates?.[1]?.toDate() ?? state.inputs.end },
+                  } })}
+                  style={{
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
+                  }}
+                />
+              </InputAddon>
+            </Col>
+            <Col xs={24} sm={12} xl={6}>
+              <InputAddon addWrapper={true}>
+                <Checkbox
+                  checked={state.inputs.rebalance}
+                  onChange={e => setState({ inputs: { rebalance: { $set: e.target.checked } } })}
+                  style={{ width: '100%' }}
+                >
+                  <InfoPopover content='Rebalance' popover='Monthly Rebalance' style={{ whiteSpace: 'nowrap' }} />
+                </Checkbox>
+              </InputAddon>
+            </Col>
+            <Col xs={24} sm={12} xl={6}>
+              <InputAddon addWrapper={true}>
+                <Checkbox
+                  checked={state.inputs.download}
+                  onChange={e => setState({ inputs: { download: { $set: e.target.checked } } })}
+                  style={{ width: '100%' }}
+                >
+                  <InfoPopover content='Download' popover='Download Results' style={{ whiteSpace: 'nowrap' }} />
+                </Checkbox>
+              </InputAddon>
+            </Col>
+            <Col xs={24} sm={24} xl={24}>
+              <hr style={{ width: 0 }} />
+            </Col>
+            <Col xs={24} sm={24} xl={24}>
+              {state.inputs.assets.map((asset, i) => (
+                <Row gutter={[{ xs: 5, sm: 10 }, { xs: 5, sm: 10 }]} key={i} style={{ marginBottom: i === state.inputs.assets.length - 1 ? 0 : '12px' }}>
+                  <Col xs={24} sm={24} xl={10}>
+                    <InputAddon forceUnround addonBefore={<InfoPopover content='Ticker' width={375} popover={Globals.inputs.tickerPopover} />}>
+                      <TickersSelector.Single
+                        ticker={asset.assetCode}
+                        onChange={e => setState({ inputs: { assets: { [i]: { assetCode: { $set: e?.trim() ?? '' } } } } })}
+                      />
+                    </InputAddon>
+                  </Col>
+                  <Col xs={16} sm={16} xl={9}>
+                    <InputMask
+                      type='text'
+                      addonBefore='Percent'
+                      maskProps={{
+                        ...maskProps,
+                        suffix: '%',
+                        value: toPercent(asset.percentual),
+                        onValueChange: (values) => setState({ inputs: { assets: { [i]: { percentual: { $set: fromPercent(+values.value) } } } } }),
+                      }}
+                    />
+                  </Col>
+                  <Col xs={8} sm={8} xl={5} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Button
+                      disabled={state.inputs.assets.length === 1}
+                      style={{ flex: 1, marginRight: '5px' }}
+                      onClick={() => setState({ inputs: { assets: { $splice: [[i, 1]] } } })}
+                    ><MinusOutlined /></Button>
+                    <Button
+                      style={{ flex: 1 }}
+                      onClick={() => setState({ inputs: { assets: { $splice: [[i+1, 0, { assetCode: '', percentual: 0 }]] } } })}
+                    ><PlusOutlined /></Button>
+                  </Col>
+                </Row>
+              ))}
+            </Col>
+          </Row>
+        </Space.Compact>
+        <div className='btn-box'>
+          <Button type='primary' disabled={state.status === 'running'} onClick={handleStart}>Start</Button>
+          <Button disabled={state.status !== 'running'} onClick={handleStop}>Stop</Button>
+          <Button disabled={!hasResult} onClick={handleReset}>Reset</Button>
+        </div>
+      </Col>
+      <Col className='portfolio-output' xs={24} lg={12}>
+        <Row gutter={[{ xs: 8, sm: 16 }, { xs: 8, sm: 16 }]}>
+          <Col className='portfolio-results' xs={24}>
+            <ResultsBox.Perfomance status={state.status} result={state.result}  />
+          </Col>
+          <Col className='portfolio-messages' xs={24}>
+            <ResultsBox.Messages show={hasResult} messages={state.messages} />
+          </Col>
+        </Row>
+      </Col>
+    </Row>
+  );
+};
+
+export default Portfolio;

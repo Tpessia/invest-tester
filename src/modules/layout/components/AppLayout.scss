@@ -1,0 +1,77 @@
+@import '@/styles/variables.scss';
+
+.ant-drawer-content-wrapper {
+    max-width: 90vw !important;
+}
+
+.layout {
+    .header {
+        position: fixed;
+        z-index: 1000;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .logo {
+            img {
+                display: block;
+                width: 64px;
+            }
+        }
+
+        .select {
+            flex: 1;
+            padding-right: 10px;
+
+            @media (min-width: $size-md) {
+                padding-right: 20px;
+            }
+
+            .ant-select {
+                float: right;
+            }
+        }
+
+        .ant-menu {
+            &.ant-menu-horizontal {
+                display: flex;
+                justify-content: flex-end;
+            }
+        }
+
+        .mobile-menu {
+            float: right;
+            height: 100%;
+            width: 3.5rem;
+            border-radius: 0;
+            color: white;
+        }
+    }
+
+    .content {
+        padding: 0 15px;
+        margin-top: 64px;
+        overflow-x: hidden;
+
+        @media (min-width: $size-xs) {
+            padding: 0 25px;
+        }
+
+        @media (min-width: $size-md) {
+            padding: 0 50px;
+        }
+
+        &>div {
+            min-height: calc(100vh - 64px - 64px - 1.5rem);
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
+    .footer {
+        text-align: center;
+        z-index: 1;
+    }
+}
