@@ -38,6 +38,7 @@ COPY ./deploy/www/*.sh ./www/
 RUN ls -la ./www && touch "./www/${PROTOCOL}-setup.sh" && chmod +x "./www/${PROTOCOL}-setup.sh"
 
 COPY ./deploy/www/robots.txt ./
+COPY ./deploy/www/sitemap.xml ./
 
 RUN ls -la .
 

@@ -107,7 +107,7 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
           <Header className='header' style={{ padding: isMobile() ? '0 0 0 15px' : '0 50px' }}>
             <div className='logo'>
               <Link to='/'>
-                <img src={logo} alt='Logo' />
+                <img src={logo} alt='Logo' width='64px' height='64px' />
               </Link>
             </div>
             <div className='select'>

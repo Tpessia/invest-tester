@@ -8,6 +8,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     // minify: false,
+    // sourcemap: true,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: {
@@ -15,6 +16,7 @@ export default defineConfig({
       },
       output: {
         entryFileNames: assetInfo => 'assets/js/[name]-[hash].js',
+        chunkFileNames: assetInfo => 'assets/js/[name]-[hash].js',
         manualChunks: {
           'libs': ['react','react-dom','@remix-run/router','axios','lodash','lodash-es','decimal.js'], // ,'@react-spring','@nivo'
           'ace': ['ace-builds','react-ace'],
