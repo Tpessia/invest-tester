@@ -6,7 +6,7 @@ repository:
   description: InvestTester | Simulate investment portfolios and algorithmic trading strategies
   topics: backtest, algo-trading, finance, stock-market
   homepage: https://InvestTester.com
-  private: true
+  private: false
   has_issues: true
   has_wiki: false
   has_projects: false
