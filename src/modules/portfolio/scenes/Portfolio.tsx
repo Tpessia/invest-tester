@@ -1,4 +1,5 @@
-import { formatCurrency, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@/modules/@utils';
+import { fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@/modules/@utils';
+import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import useService from '@/modules/@utils/hooks/useService';
 import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
 import useThrottle from '@/modules/@utils/hooks/useThrottle';
@@ -17,6 +18,7 @@ import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
 import { Button, Checkbox, Col, Row, Space } from 'antd';
 import dayjs from 'dayjs';
+import { sum } from 'lodash-es';
 import { useContext, useEffect } from 'react';
 import { NumericFormatProps } from 'react-number-format';
 import './Portfolio.scss';
@@ -57,13 +59,14 @@ const Portfolio: React.FC = () => {
 
   const globalContext = useContext(GlobalContext);
   const [state, setState] = useStateImmutable(() => initState(globalContext.urlMode));
+  const formatCurrency = useFormatCurrency();
 
   // Dependencies
 
   const algoService = useService(AlgoService, svc => svc.init(s => setState({
     status: { $set: s.status },
     messages: { $set: s.messages },
-    progress: { $set: s.progress },
+    // progress: { $set: s.progress },
   })));
 
   // Effects
@@ -126,6 +129,13 @@ const Portfolio: React.FC = () => {
       })).start(inputs, async function () {
         this.on('start', async (next) => {
           this.state.prevDate = this.date;
+          this.state.assetDates = state.inputs.assets.reduce((acc, val) => ({
+            ...acc,
+            [val.assetCode]: {
+              start: algoService.getFirstAsset(val.assetCode)!.date,
+              end: algoService.getLastAsset(val.assetCode)!.date,
+            }
+          }), {} as Record<string, { start: Date, end: Date }>);
           next();
         });
 
@@ -136,20 +146,26 @@ const Portfolio: React.FC = () => {
           if (isNewMonth) {
             this.state.prevDate = this.date;
             if (state.inputs.monthlyDeposits) {
-              this.print(`Depositing: ${state.inputs.monthlyDeposits}`);
+              this.print(`Depositing: ${formatCurrency(state.inputs.monthlyDeposits)}`);
               this.injectCash(state.inputs.monthlyDeposits);
             }
           }
 
           const totalValue = this.portfolio.total;
-          const targetAssetValues = state.inputs.assets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * val.percentual }), {} as Record<string, any>);
+          let targetAssetValues = state.inputs.assets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * val.percentual }), {} as Record<string, any>);
+
+          if (state.inputs.rebalance) {
+            const activeAssets = state.inputs.assets.filter(e => this.date >= this.state.assetDates[e.assetCode].start && this.state.assetDates[e.assetCode].end >= this.date);
+            const activePercent = sum(activeAssets.map(e => e.percentual));
+            targetAssetValues = activeAssets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * (val.percentual + (1 - activePercent) * (val.percentual / activePercent)) }), {} as Record<string, number>);
+          }
 
           let cash = this.portfolio.cash;
           for (let i in this.assets) {
             const asset = this.assets[i];
             const portAsset = this.portfolio.assets[asset.assetCode];
 
-            const targetValue = targetAssetValues[asset.assetCode];
+            const targetValue = targetAssetValues[asset.assetCode] ?? 0;
             const currentValue = (portAsset?.value ?? 0) * (portAsset?.quantity ?? 0);
 
             const diffAmount = targetValue - currentValue;

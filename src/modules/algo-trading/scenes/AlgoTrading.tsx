@@ -5,7 +5,7 @@ import ResultsBox from '@/modules/algo-trading/components/ResultsBox';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
 import { AlgoInputs, initialCode } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
-import { AlgoStatus, AlgoMessages, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
+import { AlgoMessages, AlgoStatus, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
 import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
 import InfoPopover from '@/modules/core/components/InfoPopover';
 import LayoutContext from '@/modules/layout/context/LayoutContext';

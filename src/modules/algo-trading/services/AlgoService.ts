@@ -27,6 +27,8 @@ export class AlgoService {
 
   onUpdate?: (state: AlgoState) => any;
 
+  // Events
+
   init(onUpdate?: (state: AlgoState) => any) {
     this.onUpdate = onUpdate;
     return this;
@@ -240,11 +242,7 @@ export class AlgoService {
     this.updateState({ status: { $set: 'stopped' } });
   }
 
-  private updateState($spec: Spec<AlgoState>) {
-    // this.state = update(this.state, $spec);
-    this.state = mutableUpdate(this.state, $spec);
-    this.onUpdate?.(this.state);
-  }
+  // Actions
 
   private refreshPortfolio(date: Date, assets: AssetDataFlat[]) {
     const portfolio = this.state.portfolio;
@@ -460,35 +458,6 @@ export class AlgoService {
     };
   }
 
-  private getFirstAsset(assetCode?: string) {
-    const assets = Object.values(this.assetTimeSeries).filter(e => assetCode == null || e.some(f => f.assetCode === assetCode));
-    const firsts = assets[0];
-    const first = assetCode != null ? firsts.find(e => e.assetCode === assetCode) : minBy(firsts, e => e.date.getTime());
-    return first;
-  }
-
-  private getLastAsset(assetCode?: string) {
-    const assets = Object.values(this.assetTimeSeries).filter(e => assetCode == null || e.some(f => f.assetCode === assetCode));
-    const lasts = assets[assets.length - 1];
-    const last = assetCode != null ? lasts.find(e => e.assetCode === assetCode) : maxBy(lasts, e => e.date.getTime());
-    return last;
-  }
-
-  private getLatestAsset(assetCode: string, date: Date): AssetDataFlat {
-    // Find the index of the date in the dateRange array
-    let dateIndex = this.dateRange.findIndex(d => dateToIsoStr(d) === dateToIsoStr(date));
-    if (dateIndex < 0) dateIndex = this.dateRange.length - 1;
-
-    // Iterate backwards from the date's index to find the latest asset value
-    for (let i = dateIndex; i >= 0; i--) {
-      const currentDate = this.dateRange[i];
-      const asset = this.assetTimeSeries[dateToIsoStr(currentDate)]?.find(a => a.assetCode === assetCode);
-      if (asset != null) return asset;
-    }
-
-    throw new Error(`Asset value not found for the given date range (${date}:${assetCode})`);
-  }
-
   private closePositions(date: Date, assets: AssetDataFlat[]) {
     const orders: AssetTrade[] = Object.values(this.state.portfolio.assets).map(a => ({
       assetCode: a.assetCode,
@@ -505,6 +474,14 @@ export class AlgoService {
     };
   }
 
+  // Helpers
+
+  private updateState($spec: Spec<AlgoState>) {
+    // this.state = update(this.state, $spec);
+    this.state = mutableUpdate(this.state, $spec);
+    this.onUpdate?.(this.state);
+  }
+
   private haltSimulation(msg: string | Error) {
     console.error(msg);
     this.updateState({ status: { $set: 'error' }, messages: { warnings: { $push: [`[Halting] ${getErrorMsg(msg)}`] } } });
@@ -517,5 +494,34 @@ export class AlgoService {
 
     const dataListenerMatches = code.match(/this\s*\.\s*on\s*\(\s*['"]data/g)?.length;
     if (dataListenerMatches !== 1) throw new Error('[Invalid Code] Should have one data listener: this.on(\'data\')');
+  }
+
+  public getFirstAsset(assetCode?: string) {
+    const assets = Object.values(this.assetTimeSeries).filter(e => assetCode == null || e.some(f => f.assetCode === assetCode));
+    const firsts = assets[0];
+    const first = assetCode != null ? firsts.find(e => e.assetCode === assetCode) : minBy(firsts, e => e.date.getTime());
+    return first;
+  }
+
+  public getLastAsset(assetCode?: string) {
+    const assets = Object.values(this.assetTimeSeries).filter(e => assetCode == null || e.some(f => f.assetCode === assetCode));
+    const lasts = assets[assets.length - 1];
+    const last = assetCode != null ? lasts.find(e => e.assetCode === assetCode) : maxBy(lasts, e => e.date.getTime());
+    return last;
+  }
+
+  public getLatestAsset(assetCode: string, date: Date): AssetDataFlat {
+    // Find the index of the date in the dateRange array
+    let dateIndex = this.dateRange.findIndex(d => dateToIsoStr(d) === dateToIsoStr(date));
+    if (dateIndex < 0) dateIndex = this.dateRange.length - 1;
+
+    // Iterate backwards from the date's index to find the latest asset value
+    for (let i = dateIndex; i >= 0; i--) {
+      const currentDate = this.dateRange[i];
+      const asset = this.assetTimeSeries[dateToIsoStr(currentDate)]?.find(a => a.assetCode === assetCode);
+      if (asset != null) return asset;
+    }
+
+    throw new Error(`Asset value not found for the given date range (${date}:${assetCode})`);
   }
 }

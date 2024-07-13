@@ -1,3 +1,5 @@
+@import '@/styles/variables.scss';
+
 .datePickerWrapper, 
 .datePickerWrapper > div.ant-picker-range, 
 .datePickerWrapper > div > div.ant-picker-input
@@ -7,4 +9,16 @@
 
 .datePickerWrapper > div > div.ant-picker-input input {
    text-align: center;
+}
+
+@media (max-width: $size-sm) {
+   .ant-picker-panels {
+      flex-direction: column;
+      width: calc(100vw - 20px);
+      max-width: 400px;
+
+      .ant-picker-date-panel {
+         width: 100%;
+      }
+   }
 }
