@@ -68,10 +68,15 @@ export class AlgoService {
 
     const oldDataMsgs: string[] = [];
     for (let asset of inputs.assetCodes) {
+      const firstAsset = this.getFirstAsset(asset);
+      const firstAssetDate = firstAsset && new Date(firstAsset.date);
+      const isYoungData = firstAssetDate && (firstAssetDate > addDate(inputs.start, 10));
+
       const lastAsset = this.getLastAsset(asset);
       const lastAssetDate = lastAsset && new Date(lastAsset.date);
       const isOldData = lastAssetDate && (lastAssetDate < addDate(inputs.end, -10));
-      if (isOldData) oldDataMsgs.push(`[${asset}] Last date (${dateToIsoStr(lastAssetDate)}) is older then requested date range (${dateToIsoStr(inputs.end)})`);
+
+      if (isYoungData || isOldData) oldDataMsgs.push(`[${asset}] Data range (${dateToIsoStr(firstAssetDate)}->${dateToIsoStr(lastAssetDate)}) is smaller then requested range (${dateToIsoStr(inputs.start)}->${dateToIsoStr(inputs.end)})`);
     }
 
     // TODO: review? e.g. EURUSD=X 2023-10-22 domingo
