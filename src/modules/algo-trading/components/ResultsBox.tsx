@@ -1,11 +1,13 @@
-import { toPercent } from '@/modules/@utils';
+import { dateToIsoStr, toPercent } from '@/modules/@utils';
 import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import ResultCharts from '@/modules/algo-trading/components/ResultCharts';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus } from '@/modules/algo-trading/models/AlgoState';
+import GlobalContext from '@/modules/core/context/GlobalContext';
 import LayoutContext from '@/modules/layout/context/LayoutContext';
 import { Loading3QuartersOutlined } from '@ant-design/icons';
-import { Input, Spin, Tabs, Typography } from 'antd';
+import { Input, Spin, Table, Tabs, Typography } from 'antd';
+import { ColumnsType } from 'antd/es/table';
 import { keyBy } from 'lodash-es';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -17,10 +19,11 @@ interface PerformanceProps {
 }
 
 const Perfomance: React.FC<PerformanceProps> = (props) => {
-  type TabKey = 'summary' | 'performanceChart' | 'drawdownChart' | 'positionsChart' | 'quantitiesChart' | 'pricesChart';
+  type TabKey = 'summary' | 'performanceChart' | 'drawdownChart' | 'positionsChart' | 'quantitiesChart' | 'pricesChart' | 'timeseries';
   type TabType = { label: string; key: TabKey; component: () => JSX.Element };
 
   const [activeTab, setActiveTab] = useState<TabKey>('summary');
+  const globalContext = useContext(GlobalContext);
   const layoutContext = useContext(LayoutContext);
   const formatCurrency = useFormatCurrency();
 
@@ -90,6 +93,36 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
     label: 'Prices',
     key: 'pricesChart',
     component: () => <ResultCharts.Prices result={props.result} />,
+  }, {
+    label: 'TimeSeries',
+    key: 'timeseries',
+    component: () => {
+      if (props.result == null) return <></>;
+
+      const dataSource = Object.entries(props.result.assetHist).flatMap(a => a[1].map(asset => {
+        const dateStr = dateToIsoStr(asset.date);
+        const currency = globalContext.currencyOptions.find(e => e.currency === asset.currency)?.symbol ?? asset.currency ?? globalContext.currency.symbol;
+        return {
+          key: `${asset.assetCode}-${asset.date}`,
+          date: dateStr,
+          assetCode: asset.assetCode,
+          value: `${formatCurrency(asset.value, { prefix: `${currency} ` })}`,
+          valueRaw: asset.value,
+        };
+      }));
+
+      const columns: ColumnsType<typeof dataSource[0]> = [
+        { title: 'Date', dataIndex: 'date', key: 'date', sorter: { compare: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() } },
+        { title: 'Asset', dataIndex: 'assetCode', key: 'assetCode', sorter: { compare: (a, b) => a.assetCode.localeCompare(b.assetCode) } },
+        { title: 'Value', dataIndex: 'value', key: 'value', sorter: { compare: (a, b) => a.valueRaw - b.valueRaw } },
+      ];
+
+      return (
+        <div className='algo-timeseries'>
+          <Table virtual dataSource={dataSource} columns={columns} pagination={{ simple: true }} size='small' />
+        </div>
+      );
+    },
   }];
 
   if (props.result && Object.values(props.result.assetHist).length <= 1)
@@ -115,7 +148,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
             activeKey={activeTab} items={tabs} centered={!layoutContext.isMobile}
             onChange={t => setActiveTab(t as TabKey)}
           />
-          {activeTab === 'summary' ? (
+          {['summary','timeseries'].includes(activeTab) ? (
             tabsDict[activeTab].component()
           ) : (
             <div className='algo-chart'>

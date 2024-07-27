@@ -19,6 +19,8 @@ RUN npm run build
 
 FROM nginx:1.27.0-bookworm AS run
 
+ARG ENV=dev
+ENV ENV=${ENV}
 ARG PROTOCOL=http
 ENV PROTOCOL=${PROTOCOL}
 
@@ -47,4 +49,4 @@ RUN ls -la .
 EXPOSE 80
 EXPOSE 443
 
-CMD /app/www/${PROTOCOL}-setup.sh && nginx -g 'daemon off;'
+CMD echo "PROTOCOL=${PROTOCOL}" && /app/www/${PROTOCOL}-setup.sh && nginx -g 'daemon off;'

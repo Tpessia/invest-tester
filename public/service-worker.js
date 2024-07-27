@@ -70,7 +70,7 @@ function fetchFromCache(event) {
   if (event.request.method !== 'GET') return; // Cache only GET requests
   if (!url.protocol.startsWith('http')) return; // Cache only http/s
   if (url.pathname.startsWith('/api')) return; // Do not cache API calls
-  if ([/\/service-worker\.js/,/\/manifest.*\.json/].some(e => e.test(url.pathname))) return; // Do not cache specific files
+  if ([/\/robots\.txt/,/\/sitemap\.xml/,/\/service-worker\.js/,/\/manifest.*\.json/].some(e => e.test(url.pathname))) return; // Do not cache specific files
 
   // network-first strategy
   event.respondWith(

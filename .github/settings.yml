@@ -3,7 +3,7 @@
 repository:
   default_branch: main
   name: invest-tester
-  description: InvestTester | Simulate investment portfolios and algorithmic trading strategies
+  description: Simulate asset allocations, optimize investment portfolios and backtest algo trading strategies
   topics: backtest, algo-trading, finance, stock-market
   homepage: https://InvestTester.com
   private: false

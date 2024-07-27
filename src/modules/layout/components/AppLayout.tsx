@@ -7,7 +7,7 @@ import { Link, useLocation } from 'react-router-dom';
 import LayoutContext from '../context/LayoutContext';
 import AppBarMenu from './AppBarMenu';
 import './AppLayout.scss';
-import logo from '/logo/logo.svg';
+import logo from '/assets/logo/logo.svg';
 
 const customTheme: ThemeConfig = {
   hashed: false,
@@ -106,6 +106,7 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
         <Layout className='layout'>
           <Header className='header' style={{ padding: isMobile() ? '0 0 0 15px' : '0 50px' }}>
             <div className='logo'>
+              <h1>Portfolio Asset Allocation Backtest Optimization and Analysis</h1>
               <Link to='/'>
                 <img src={logo} alt='Logo' width='64px' height='64px' />
               </Link>

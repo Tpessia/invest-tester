@@ -19,6 +19,7 @@ import { fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } fr
 import { Button, Checkbox, Col, Row, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useContext, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import './AlgoTrading.scss';
 
 interface State {
@@ -144,6 +145,10 @@ const AlgoTrading: React.FC = () => {
 
   return (
     <div className='algo'>
+      <Helmet>
+        <title>InvestTester | Algo Trading</title>
+        <link rel='canonical' href='https://InvestTester.com/algo-trading' />
+      </Helmet>
       <Space.Compact className='algo-inputs'>
         <Row gutter={[{ xs: 8, sm: 16 }, { xs: 8, sm: 16 }]}>
           <Col xs={24} sm={12} xl={9}>

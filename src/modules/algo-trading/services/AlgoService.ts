@@ -448,7 +448,7 @@ export class AlgoService {
     };
 
     const assetHist = groupBy(
-      portfolioHist.flatMap(e => Object.values(e.assets).map(f => ({ ...f, date: e.date })))
+      uniqBy(portfolioHist.flatMap(e => Object.values(e.assets).map(f => ({ ...f, date: e.date }))).filter(e => !!e.value), e => `${e.assetCode}-${e.date}`)
     , e => e.assetCode);
 
     return {

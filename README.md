@@ -34,4 +34,6 @@ npm run docker:build
 npm run docker:run
 ```
 
+Then access http://localhost:80/
+
 > Run on Linux or [GitBash](https://git-scm.com/downloads)

@@ -3,6 +3,7 @@ import LayoutContext from '@/modules/layout/context/LayoutContext';
 import { Col, Menu, Row } from 'antd';
 import clsx from 'clsx';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './AlgoDocs.scss';
 
@@ -58,6 +59,10 @@ const Docs: React.FC = () => {
 
   return (
     <div className={clsx('docs', { collapsed })}>
+      <Helmet>
+        <title>InvestTester | Docs</title>
+        <link rel='canonical' href='https://InvestTester.com/docs' />
+      </Helmet>
       <div className='docs-menu'>
         <Menu
           mode='inline'

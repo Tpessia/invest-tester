@@ -18,8 +18,9 @@ import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
 import { Button, Checkbox, Col, Row, Space } from 'antd';
 import dayjs from 'dayjs';
-import { sum } from 'lodash-es';
+import { round, sum, uniqBy } from 'lodash-es';
 import { useContext, useEffect } from 'react';
+import { Helmet } from 'react-helmet';
 import { NumericFormatProps } from 'react-number-format';
 import './Portfolio.scss';
 
@@ -102,13 +103,16 @@ const Portfolio: React.FC = () => {
       if (state.inputs.assets.length === 0) throw new Error('No assets selected');
 
       const invalidAssetIndexes = state.inputs.assets.reduce((acc, val, i) => val.assetCode ? acc : [...acc, +i+1], [] as number[]);
-      if (invalidAssetIndexes.length) throw new Error('Invalid assetCodes at asset ' + invalidAssetIndexes.join(', '));
+      if (invalidAssetIndexes.length) throw new Error('Invalid assets at index: ' + invalidAssetIndexes.join(', '));
 
-      const invalidPercentIndexes = state.inputs.assets.reduce((acc, val, i) => !!val.percentual ? acc : [...acc, +i+1], [] as number[]);
-      if (invalidPercentIndexes.length) throw new Error('Invalid percentages at asset ' + invalidPercentIndexes.join(', '));
+      const duplicateAssets = uniqBy(state.inputs.assets.map(e => e.assetCode).filter((e, i, a) => a.indexOf(e) !== i), e => e);
+      if (duplicateAssets.length) throw new Error('Duplicate assets: ' + duplicateAssets.join(', '));
+
+      const invalidPercents = state.inputs.assets.reduce((acc, val, i) => !!val.percentual ? acc : [...acc, val.assetCode], [] as string[]);
+      if (invalidPercents.length) throw new Error('Invalid percentages: ' + invalidPercents.join(', '));
 
       const totalPercent = state.inputs.assets.reduce((acc, val) => acc + val.percentual, 0);
-      if (totalPercent !== 1) throw new Error('Total percentage sum must be 100%');
+      if (round(totalPercent - 1, 4) !== 0) throw new Error(`Total percentage sum is ${round(toPercent(totalPercent), 2)}%, but must be 100%`);
 
       // Start algo
 
@@ -224,9 +228,21 @@ const Portfolio: React.FC = () => {
         { xs: 30, sm: 30, md: 30, lg: 0 }
       ]}
     >
+      <Helmet>
+        <title>InvestTester | Backtest Your Portfolio</title>
+        <link rel='canonical' href='https://InvestTester.com/' />
+      </Helmet>
       <Col className='portfolio-inputs' xs={24} lg={12}>
         <Space.Compact>
           <Row gutter={[{ xs: 8, sm: 16 }, { xs: 8, sm: 16 }]}>
+            <Col xs={24} sm={24} xl={24}>
+              <div style={{ textAlign: 'center', fontSize: '1rem', marginTop: '10px' }}>
+                Backtest your investment portfolio by defining your initial balance, date range and asset allocations, then press <b>Start</b>
+              </div>
+            </Col>
+            <Col xs={24} sm={24} xl={24}>
+              <hr style={{ width: 0 }} />
+            </Col>
             <Col xs={24} sm={24} xl={12}>
               <InputMask
                 type='text'
