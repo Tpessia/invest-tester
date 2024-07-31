@@ -1,16 +1,19 @@
 # Build
 
-FROM node:20.12.2-bullseye AS build
+FROM node:20.12.2-bookworm AS build
 
 ARG ENV=dev
 ARG NODE_OPTIONS
 
 WORKDIR /app
 
-COPY package*.json .
+COPY package*.json ./
 RUN npm install
 
-COPY . .
+COPY *.* ./
+COPY src ./src
+COPY public ./public
+
 RUN ls -la .
 
 RUN npm run build
@@ -31,7 +34,7 @@ RUN apt-get install -y net-tools nano
 RUN if [ "${PROTOCOL}" = "https" ]; then apt-get install -y certbot cron; fi
 RUN rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/dist .
+COPY --from=build /app/dist ./
 
 COPY ./deploy/www/nginx.* /etc/nginx/
 RUN cp "/etc/nginx/nginx.${PROTOCOL}.conf" /etc/nginx/nginx.conf

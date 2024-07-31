@@ -1,0 +1,52 @@
+{
+  "httpPort": 8080,
+  "hostname": "0.0.0.0",
+  "targetRoute": "$TARGET_URL",
+  "proxyOrder": ["SsrProxy","HttpProxy"],
+  "isBot": true,
+  "ssr": {
+    "browserConfig": {
+      "headless": true,
+      "args": ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+    },
+    "queryParams": [{ "key": "headless","value": "true" }],
+    "allowedResources": ["document", "script", "xhr", "fetch"],
+    "waitUntil": "networkidle0"
+  },
+  "httpProxy": {
+    "shouldUse": true
+  },
+  "static": {
+    "shouldUse": false
+  },
+  "log": {
+    "level": 3,
+    "console": {
+      "enabled": true
+    },
+    "file": {
+      "enabled": false,
+      "dirPath": "/tmp/ssr-proxy/logs"
+    }
+  },
+  "cache": {
+    "shouldUse": true,
+    "maxEntries": 50,
+    "maxByteSize": 52428800,
+    "expirationMs": 86400000,
+    "autoRefresh": {
+      "enabled": true,
+      "shouldUse": true,
+      "proxyOrder": ["SsrProxy","HttpProxy"],
+      "initTimeoutMs": 300000,
+      "intervalMs": 43200000,
+      "parallelism": 1,
+      "isBot": true,
+      "routes": [
+        { "method": "GET", "url": "$TARGET_URL" },
+        { "method": "GET", "url": "$TARGET_URL/algo-trading" },
+        { "method": "GET", "url": "$TARGET_URL/docs" }
+      ]
+    }
+  }
+}

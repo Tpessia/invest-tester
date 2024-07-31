@@ -119,7 +119,7 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
                 options={globalContext.currencyOptions.map(e => ({ value: e.currency, label: <span>{e.currency} ({e.symbol})</span> }))}
               />
             </div>
-            {isMobile() ? (
+            {isMobile() && !globalContext.isBot ? (
               <Button className='mobile-menu' type='text' onClick={showDrawer}>
                 <MenuOutlined />
               </Button>
@@ -149,7 +149,7 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
           </Content>
 
           <Footer className='footer'>
-            InvestTester | Created by <a style={{ fontWeight: 500 }} href='https://github.com/Tpessia/' target='_blank' rel='noopener noreferrer'>Tpessia</a>
+            InvestTester | Created by <a style={{ fontWeight: 500 }} href='https://github.com/Tpessia/' target='_blank' rel='noopener noreferrer'>Tpessia</a>{globalContext.isBot && ` ${new Date().toISOString()}`}
           </Footer>
         </Layout>
       </LayoutContext.Provider>

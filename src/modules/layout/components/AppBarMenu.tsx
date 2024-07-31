@@ -4,7 +4,7 @@ import { DownloadOutlined, GithubOutlined, SettingOutlined } from '@ant-design/i
 import AppConfig from '@core/services/AppConfig';
 import { Menu } from 'antd';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface Props {
   horizontal: boolean,
@@ -31,16 +31,13 @@ const AppBarMenu: React.FC<Props> = (props) => {
         onClick={props.onSelect}
         items={[{
           key: '/',
-          label: 'Porfolio',
-          onClick: () => navigate('/'),
+          label: <Link to='/'>Porfolio</Link>,
         }, {
           key: '/algo-trading',
-          label: 'Algo Trading',
-          onClick: () => navigate('/algo-trading'),
+          label: <Link to='/algo-trading'>Algo Trading</Link>,
         }, {
           key: '/docs',
-          label: 'Docs',
-          onClick: () => navigate('/docs'),
+          label: <Link to='/docs'>Docs</Link>,
         }, {
           key: 'api',
           label: 'API',

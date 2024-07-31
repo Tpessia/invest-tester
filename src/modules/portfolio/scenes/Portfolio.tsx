@@ -231,6 +231,7 @@ const Portfolio: React.FC = () => {
       <Helmet>
         <title>InvestTester | Backtest Your Portfolio</title>
         <link rel='canonical' href='https://InvestTester.com/' />
+        <meta property="og:description" content="Simulate asset allocations, optimize investment portfolios and backtest algo trading strategies" />
       </Helmet>
       <Col className='portfolio-inputs' xs={24} lg={12}>
         <Space.Compact>

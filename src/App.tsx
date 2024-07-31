@@ -28,6 +28,7 @@ const App: React.FC = () => {
 
   const [globalContext, setGlobalContext] = useStateImmutable<GlobalContextType>(() => ({
     debug: false,
+    isBot: new URLSearchParams(window.location.search).get('headless')?.toLowerCase() == 'true',
     urlMode: new URLSearchParams(window.location.search).get('m')?.toUpperCase(),
     currencyOptions,
     currency: tryParseJson(localStorage.getItem(Globals.cache.currency)) || currencyOptions[0],

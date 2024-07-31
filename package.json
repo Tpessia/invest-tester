@@ -16,6 +16,7 @@
     "docker:config": "npm run docker:base -- config",
     "docker:build": "npm run docker:base -- build --parallel",
     "docker:run": "npm run docker:base -- up",
+    "docker:logs": "npm run docker:base -- logs -f",
     "docker:rm": "npm run docker:base -- rm --force",
     "docker:exec": "npm run docker:base -- exec invest-tester /bin/bash",
     "docker:sast": "sudo docker run --rm -v \"${PWD}:/src\" returntocorp/semgrep semgrep --metrics=off --no-git-ignore --config \"/src/.semgrep.yml\" --config \"p/secrets\" --config \"p/gitleaks\" --config \"p/owasp-top-ten\" --config \"p/cwe-top-25\" --config \"p/ci\" --config \"p/security-audit\" --config \"p/javascript\" --config \"p/typescript\" --config \"p/docker\" --config \"p/docker-compose\" --config \"p/nginx\" --config \"p/react\" /src # --verbose"

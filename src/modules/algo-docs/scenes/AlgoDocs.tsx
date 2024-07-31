@@ -62,6 +62,7 @@ const Docs: React.FC = () => {
       <Helmet>
         <title>InvestTester | Docs</title>
         <link rel='canonical' href='https://InvestTester.com/docs' />
+        <meta property="og:description" content="Documentation for the InvestTester backtesting platform" />
       </Helmet>
       <div className='docs-menu'>
         <Menu

@@ -148,6 +148,7 @@ const AlgoTrading: React.FC = () => {
       <Helmet>
         <title>InvestTester | Algo Trading</title>
         <link rel='canonical' href='https://InvestTester.com/algo-trading' />
+        <meta property="og:description" content="Create and backtest algo trading strategies and asset allocations using JavaScript" />
       </Helmet>
       <Space.Compact className='algo-inputs'>
         <Row gutter={[{ xs: 8, sm: 16 }, { xs: 8, sm: 16 }]}>

@@ -21,6 +21,7 @@ services:
             - default
         depends_on:
             - dados-financeiros
+            - ssr-proxy
 
     dados-financeiros:
         container_name: dados-financeiros
@@ -34,6 +35,22 @@ services:
                 - NODE_OPTIONS=${NODE_OPTIONS}
         ports:
             - 3000:3000
+        environment:
+            - TZ=UTC
+        networks:
+            - default
+
+    ssr-proxy:
+        container_name: ssr-proxy
+        image: ssr-proxy
+        restart: always
+        build:
+            context: ./deploy
+            dockerfile: ./ssr.Dockerfile
+            args:
+                - ENV=${ENV}
+        ports:
+            - 8080:8080
         environment:
             - TZ=UTC
         networks:

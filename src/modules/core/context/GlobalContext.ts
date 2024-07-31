@@ -6,6 +6,7 @@ export type CurrencyType = { currency: string, symbol: string };
 
 export interface GlobalContextType {
     debug: boolean;
+    isBot: boolean;
     urlMode: UrlMode;
     currency: CurrencyType;
     currencyOptions: CurrencyType[];
