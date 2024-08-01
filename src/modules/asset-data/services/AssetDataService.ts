@@ -21,6 +21,7 @@ export class AssetDataService {
             })
             .then(r => JSON.parse(r.data, jsonDateReviver))
             .catch(err => { throw new Error(err?.response?.data ?? err.toString()); });
+
         data.forEach(e => e.data.forEach(d => d.date = normalizeTimezone(d.date)));
 
         return data;

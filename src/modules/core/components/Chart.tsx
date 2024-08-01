@@ -81,11 +81,12 @@ const Chart: React.FC<Props> = (props) => {
           itemsSpacing: 0,
           itemDirection: 'left-to-right',
           itemWidth: 0,
-          itemHeight: 20,
+          itemHeight: 15,
           itemOpacity: .9,
           padding: 0,
-          symbolSize: 12,
+          symbolSize: 10,
           symbolShape: 'circle',
+          symbolSpacing: 5,
         }] : undefined}
         // enableSlices={'x'}
         // pointSize={10}

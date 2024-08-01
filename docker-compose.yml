@@ -49,6 +49,7 @@ services:
             dockerfile: ./ssr.Dockerfile
             args:
                 - ENV=${ENV}
+                - NODE_OPTIONS=${NODE_OPTIONS}
         ports:
             - 8080:8080
         environment:

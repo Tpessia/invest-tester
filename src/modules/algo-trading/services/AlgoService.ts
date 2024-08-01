@@ -34,7 +34,7 @@ export class AlgoService {
     return this;
   }
 
-  async start(inputs: AlgoInputs, algo: AlgoFunction) {
+  async start(inputs: AlgoInputs, algo: AlgoFunction, algoStr?: string) {
     if (this.state?.status === 'running') return;
 
     const emitEvent = (event: string, ...args: any[]) =>
@@ -90,7 +90,7 @@ export class AlgoService {
 
     // Reset State
 
-    this.state = new AlgoState(firstAssetDate, lastAssetDate, inputs, algo.toString());
+    this.state = new AlgoState(firstAssetDate, lastAssetDate, inputs, algoStr ?? algo.toString());
     this.workspace = new AlgoWorkspace();
     this.updateState({
       status: { $set: 'running' },
@@ -240,7 +240,7 @@ export class AlgoService {
 
     async function algo(this: any) { await evalAsync.bind(this)(algoCode); }
 
-    return await this.start(inputs, algo);
+    return await this.start(inputs, algo, algoCode);
   }
 
   stop() {

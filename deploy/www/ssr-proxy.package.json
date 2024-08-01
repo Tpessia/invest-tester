@@ -1,0 +1,10 @@
+{
+  "name": "ssr-proxy",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node ./ssr-proxy.js"
+  },
+  "dependencies": {
+    "ssr-proxy-js": "1.2.1"
+  }
+}

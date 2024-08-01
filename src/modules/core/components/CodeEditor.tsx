@@ -12,7 +12,9 @@ const CodeEditor: React.FC<Props> = (props) => {
 
   const nativeStyle: React.CSSProperties = {
     width: '100%',
-    border: `5px solid ${variables.bodySecundary}`
+    border: `5px solid ${variables.bodySecundary}`,
+    maxHeight: '100vh',
+    overflow: 'hidden',
   };
 
   // const themes = ['ambiance','chaos','clouds_midnight','dracula','cobalt','gruvbox','gob','idle_fingers','kr_theme','merbivore','merbivore_soft','mono_industrial','monokai','pastel_on_dark','solarized_dark','terminal','tomorrow_night','tomorrow_night_blue','tomorrow_night_bright','tomorrow_night_eighties','twilight','vibrant_ink'];

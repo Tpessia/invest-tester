@@ -56,8 +56,7 @@ interface State {
 }
 
 const AppLayout: React.FC<PropsWithChildren> = (props)  => {
-  const location = useLocation();
-  const globalContext = useContext(GlobalContext);
+  // State
 
   const [state, setState] = useState<State>({
     width: window.innerWidth,
@@ -65,12 +64,23 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
     visible: false
   });
 
+  // Dependencies
+
+  const location = useLocation();
+  const globalContext = useContext(GlobalContext);
+
+  // Effects
+
   useEffect(() => {
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  // Values
+
   const isMobile = () => state.width < variables.sizeMd;
+
+  // Callbacks
 
   const updateDimensions = () => {
     setState({
@@ -94,6 +104,8 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
     })
   }
 
+  // Render
+
   return (
     <ConfigProvider theme={{ ...customTheme }}>
       <LayoutContext.Provider
@@ -106,8 +118,8 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
         <Layout className='layout'>
           <Header className='header' style={{ padding: isMobile() ? '0 0 0 15px' : '0 50px' }}>
             <div className='logo'>
-              <h1>Portfolio Asset Allocation Backtest Optimization and Analysis</h1>
-              <Link to='/'>
+              <h1 id="title">Portfolio Asset Allocation Backtest Optimization and Analysis</h1>
+              <Link className='logo-img' to='/'>
                 <img src={logo} alt='Logo' width='64px' height='64px' />
               </Link>
             </div>

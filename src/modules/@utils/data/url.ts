@@ -8,3 +8,30 @@ export function changeUrl(baseUrl: string, config: { hostname?: string, port?: s
 
   return url.toString();
 }
+
+export function writeObjToUrl(obj: object): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(obj)) {
+    params.append(key, JSON.stringify(value));
+  }
+  return params;
+}
+
+export function readObjFromUrl(params: URLSearchParams): object {
+  const obj: any = {};
+  for (const [key, value] of params.entries()) {
+    obj[key] = JSON.parse(value);
+  }
+  return obj;
+}
+
+export function encodeUrlParams(obj: object): string {
+  const url = writeObjToUrl(obj);
+  const encoded = btoa(url.toString());
+  return encoded;
+}
+
+export function decodeUrlParams(encoded: string): object {
+  const url = atob(encoded);
+  return readObjFromUrl(new URLSearchParams(url));
+}

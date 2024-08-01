@@ -119,7 +119,11 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
 
       return (
         <div className='algo-timeseries'>
-          <Table virtual dataSource={dataSource} columns={columns} pagination={{ simple: true }} size='small' />
+          <Table
+            virtual dataSource={dataSource}
+            columns={columns} size='small'
+            pagination={{ simple: true, pageSize: layoutContext.isMobile ? 4 : 7 }}
+          />
         </div>
       );
     },

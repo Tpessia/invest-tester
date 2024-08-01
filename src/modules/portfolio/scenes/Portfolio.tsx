@@ -1,4 +1,4 @@
-import { fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@/modules/@utils';
+import { fromPercent, getErrorMsg, jsonDateReviver, decodeUrlParams, toPercent, tryParseJson, encodeUrlParams } from '@/modules/@utils';
 import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import useService from '@/modules/@utils/hooks/useService';
 import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
@@ -9,19 +9,20 @@ import { AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
 import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
-import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
+import { MinusOutlined, PlusOutlined, ShareAltOutlined } from '@ant-design/icons';
 import DateRangePicker from '@core/components/DateRangePicker';
 import InfoPopover from '@core/components/InfoPopover';
 import InputAddon from '@core/components/InputAddon';
 import InputMask from '@core/components/InputMask';
 import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
-import { Button, Checkbox, Col, Row, Space } from 'antd';
+import { Button, Checkbox, Col, notification, Row, Space } from 'antd';
 import dayjs from 'dayjs';
 import { round, sum, uniqBy } from 'lodash-es';
 import { useContext, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { NumericFormatProps } from 'react-number-format';
+import { useLocation } from 'react-router-dom';
 import './Portfolio.scss';
 
 interface State {
@@ -55,14 +56,16 @@ const initState = (urlMode: UrlMode): State => ({
   progress: 0,
 });
 
-const Portfolio: React.FC = () => {
-  // State
+const shareLinkParam = 'inputs';
 
+const Portfolio: React.FC = () => {
+  // Dependencies
+  
+  const location = useLocation();
   const globalContext = useContext(GlobalContext);
-  const [state, setState] = useStateImmutable(() => initState(globalContext.urlMode));
   const formatCurrency = useFormatCurrency();
 
-  // Dependencies
+  const [nApi, nContext] = notification.useNotification();
 
   const algoService = useService(AlgoService, svc => svc.init(s => setState({
     status: { $set: s.status },
@@ -70,7 +73,21 @@ const Portfolio: React.FC = () => {
     // progress: { $set: s.progress },
   })));
 
+  // State
+
+  const [state, setState] = useStateImmutable(() => initState(globalContext.urlMode));
+
   // Effects
+
+  useEffect(() => {
+    if (location.search) {
+      const inputs = new URLSearchParams(location.search).get(shareLinkParam);
+      if (inputs) {
+        const { assets, initCash, monthlyDeposits, start, end, rebalance, download } = decodeUrlParams(inputs) as State['inputs'];
+        setState({ inputs: { $set: { assets, initCash, monthlyDeposits, start, end, rebalance, download } } });
+      }
+    }
+  }, [location.search]);
 
   useEffect(useThrottle(() => {
     localStorage.setItem(Globals.cache.portfolioInputs, JSON.stringify(state.inputs));
@@ -218,6 +235,16 @@ const Portfolio: React.FC = () => {
     algoService.stop();
   };
 
+  const handleShare = () => {
+    const urlParams = encodeUrlParams(state.inputs);
+    const shareLink = new URL(window.location.href);
+    shareLink.searchParams.append(shareLinkParam, urlParams);
+    navigator.clipboard.writeText(shareLink.toString()).then(
+      () => nApi.open({ message: 'Share link copied to clipboard!', duration: 5 }), // description: shareLink
+      (err) => nApi.open({ message: 'Error copying share link: ' + err, duration: 5 })
+    );
+  };
+
   // Render
 
   return (
@@ -228,10 +255,11 @@ const Portfolio: React.FC = () => {
         { xs: 30, sm: 30, md: 30, lg: 0 }
       ]}
     >
+      {nContext}
       <Helmet>
         <title>InvestTester | Backtest Your Portfolio</title>
-        <link rel='canonical' href='https://InvestTester.com/' />
-        <meta property="og:description" content="Simulate asset allocations, optimize investment portfolios and backtest algo trading strategies" />
+        <link rel="canonical" href="https://InvestTester.com/" />
+        <meta name="description" content="Simulate asset allocations, optimize investment portfolios and backtest algo trading strategies" />
       </Helmet>
       <Col className='portfolio-inputs' xs={24} lg={12}>
         <Space.Compact>
@@ -345,6 +373,7 @@ const Portfolio: React.FC = () => {
                       onClick={() => setState({ inputs: { assets: { $splice: [[i, 1]] } } })}
                     ><MinusOutlined /></Button>
                     <Button
+                      disabled={state.inputs.assets.length >= 10}
                       style={{ flex: 1 }}
                       onClick={() => setState({ inputs: { assets: { $splice: [[i+1, 0, { assetCode: '', percentual: 0 }]] } } })}
                     ><PlusOutlined /></Button>
@@ -358,6 +387,7 @@ const Portfolio: React.FC = () => {
           <Button type='primary' disabled={state.status === 'running'} onClick={handleStart}>Start</Button>
           <Button disabled={state.status !== 'running'} onClick={handleStop}>Stop</Button>
           <Button disabled={!hasResult} onClick={handleReset}>Reset</Button>
+          <Button onClick={handleShare}><ShareAltOutlined title='Share' /></Button>
         </div>
       </Col>
       <Col className='portfolio-output' xs={24} lg={12}>
