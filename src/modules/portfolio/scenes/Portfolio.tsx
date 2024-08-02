@@ -56,7 +56,7 @@ const initState = (urlMode: UrlMode): State => ({
   progress: 0,
 });
 
-const shareLinkParam = 'inputs';
+const shareLinkParam = 'data';
 
 const Portfolio: React.FC = () => {
   // Dependencies

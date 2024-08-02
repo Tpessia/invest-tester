@@ -17,6 +17,7 @@ services:
             - TZ=UTC
         volumes:
             - ${SSL_CERTIFICATES_VOLUME}:/etc/letsencrypt
+            # - /tmp/nginx-logs:/opt/logs
         networks:
             - default
         depends_on:
@@ -60,3 +61,7 @@ services:
 networks:
   default:
     driver: bridge
+
+# volumes:
+#   nginx-logs:
+#     driver: local

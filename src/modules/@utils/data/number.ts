@@ -34,3 +34,28 @@ export const formatCurrency = (value: number, config?: NumericFormatProps) => nu
   decimalScale: 2,
   ...config,
 });
+
+export function findBestLogBase(values: number[]) {
+  const min = Math.min(...values.filter(v => v > 0));
+  const max = Math.max(...values);
+
+  // Default to natural log if all values are the same
+  if (min === max) return Math.E;
+
+  const bases = [2, Math.E, 10];
+  let bestBase = 2;
+  let bestSpread = 0;
+
+  for (const base of bases) {
+    const minLog = Math.log(min) / Math.log(base);
+    const maxLog = Math.log(max) / Math.log(base);
+    const spread = maxLog - minLog;
+
+    if (spread > bestSpread) {
+      bestSpread = spread;
+      bestBase = base;
+    }
+  }
+
+  return bestBase;
+}

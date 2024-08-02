@@ -47,9 +47,11 @@ COPY ./deploy/www/sitemap.xml ./
 
 RUN ls -la .
 
-# USER nginx
+# RUN mkdir -p /opt/logs
+COPY ./deploy/docker-entrypoint.sh /opt/
+RUN chmod +x /opt/docker-entrypoint.sh
 
 EXPOSE 80
 EXPOSE 443
 
-CMD echo "PROTOCOL=${PROTOCOL}" && /app/www/${PROTOCOL}-setup.sh && nginx -g 'daemon off;'
+CMD ["/opt/docker-entrypoint.sh"]

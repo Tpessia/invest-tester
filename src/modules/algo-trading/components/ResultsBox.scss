@@ -25,7 +25,7 @@
 }
 
 .output-box {
-  min-height: 275px !important;
+  min-height: 340px !important;
   height: 500px !important;
   border: 5px solid $body-secundary !important;
 
@@ -100,7 +100,7 @@ div.output-box {
   .algo-chart {
     flex: 1;
     margin-top: 50px;
-    max-height: 215px !important;
+    max-height: 280px !important;
   
     @media (min-width: $size-md) {
       max-height: none !important;
@@ -109,11 +109,11 @@ div.output-box {
 
   .algo-timeseries {
     flex: 1;
-    margin-top: 45px;
+    margin-top: 46px;
     font-size: .95rem;
     line-height: 1.4;
     overflow: auto;
-    max-height: 220px !important;
+    max-height: 285px !important;
 
     @media (min-width: $size-md) {
       max-height: 350px !important;

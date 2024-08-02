@@ -112,9 +112,18 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
       }));
 
       const columns: ColumnsType<typeof dataSource[0]> = [
-        { title: 'Date', dataIndex: 'date', key: 'date', sorter: { compare: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() } },
-        { title: 'Asset', dataIndex: 'assetCode', key: 'assetCode', sorter: { compare: (a, b) => a.assetCode.localeCompare(b.assetCode) } },
-        { title: 'Value', dataIndex: 'value', key: 'value', sorter: { compare: (a, b) => a.valueRaw - b.valueRaw } },
+        {
+          title: 'Date', dataIndex: 'date', key: 'date',
+          sorter: { compare: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() },
+        },
+        {
+          title: 'Asset', dataIndex: 'assetCode', key: 'assetCode',
+          sorter: { compare: (a, b) => a.assetCode.localeCompare(b.assetCode) },
+        },
+        {
+          title: 'Value', dataIndex: 'value', key: 'value',
+          sorter: { compare: (a, b) => a.valueRaw - b.valueRaw },
+        },
       ];
 
       return (
@@ -122,7 +131,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
           <Table
             virtual dataSource={dataSource}
             columns={columns} size='small'
-            pagination={{ simple: true, pageSize: layoutContext.isMobile ? 4 : 7 }}
+            pagination={{ simple: true, pageSize: layoutContext.isMobile ? 6 : 7 }}
           />
         </div>
       );

@@ -1,14 +1,17 @@
 import variables from '@/styles/variables';
 import { Theme } from '@nivo/core';
 import { DatumValue, Point, PointTooltip, ResponsiveLine, Serie } from '@nivo/line';
-import { formatCurrency, pickEvenly } from '@utils/index';
+import { findBestLogBase, formatCurrency, pickEvenly } from '@utils/index';
 import Color from 'color';
+import { sortBy } from 'lodash-es';
 
 interface Props {
   data: Serie[];
-  type?: 'liner' | 'log';
-  min?: number;
+  type?: 'linear' | 'log';
+  max?: number | 'auto';
+  min?: number | 'auto';
   maxOffset?: boolean;
+  minOffset?: boolean;
   labelPrefix?: (p: Point) => React.ReactNode;
   xFormarter?: (x: DatumValue) => string;
   yFormarter?: (y: DatumValue) => string;
@@ -36,8 +39,13 @@ const Chart: React.FC<Props> = (props) => {
     </div>
   );
 
+  const flatY = sortBy(props.data.flatMap(e => e.data.map(f => f.y as number)));
+
   const chartLegendsX = pickEvenly(props.data[0].data.map(e => e.x), 5);
-  const maxY = props.maxOffset === true ?  Math.max(...props.data.flatMap(e => e.data.flatMap(f => f.y as number))) * 1.05 : 'auto';
+  const chartLegendsY = props.type === 'log' ? pickEvenly(flatY, 10).map(e => Math.round(e)) : 10;
+  const maxY = props.maxOffset ? Math.max(...flatY) * 1.05 : props.max ?? 'auto';
+  const minY = props.minOffset ? Math.min(...flatY) * 0.95 : props.min ?? 'auto';
+  console.log('flatY', flatY, chartLegendsY, maxY, minY);
 
   const colorFunc = (d: Serie) => {
     const color = Color(variables.primaryColor);
@@ -53,16 +61,16 @@ const Chart: React.FC<Props> = (props) => {
         colors={colorFunc}
         theme={theme}
         margin={{ top: 15, right: 30, bottom: 30, left: 65 }}
-        curve="monotoneX"
+        curve='monotoneX'
         xScale={{ type: 'time', min: 'auto', max: 'auto' }}
-        yScale={{ type: props.type as any ?? 'linear', min: props.min ?? 'auto', max: maxY }}
+        yScale={{ type: props.type ?? 'linear', min: minY, max: maxY, base: props.type === 'log' ? findBestLogBase(flatY) : undefined }}
         axisBottom={{
           tickSize: 5, tickPadding: 5, tickRotation: 0, // tickRotation: 315
           legend: null, tickValues: chartLegendsX, format: '%Y-%m',
         }}
         axisLeft={{
           tickSize: 5, tickPadding: 5, tickRotation: 0,
-          legend: null, tickValues: 10, format: e => formatCurrency(e, { prefix: '', decimalScale: 2, fixedDecimalScale: false }),
+          legend: null, tickValues: chartLegendsY, format: e => formatCurrency(e, { prefix: '', decimalScale: 2, fixedDecimalScale: false }),
         }}
         enableGridX={false}
         enableGridY={false}

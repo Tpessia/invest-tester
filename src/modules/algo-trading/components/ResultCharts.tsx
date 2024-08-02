@@ -66,7 +66,8 @@ const Quantities: React.FC<Props> = (props) => {
   return (
     <Chart
       data={data}
-      // min={0}
+      maxOffset={true}
+      minOffset={true}
       labelPrefix={p => `${p.serieId}: `}
       xFormarter={x => dateToIsoStr(x as Date)}
     />
@@ -85,9 +86,9 @@ const Prices: React.FC<Props> = (props) => {
   return (
     <Chart
       data={data}
-      // type='log'
-      // min={0}
+      type='log'
       maxOffset={true}
+      minOffset={true}
       labelPrefix={p => `${p.serieId}: `}
       xFormarter={x => dateToIsoStr(x as Date)}
       yFormarter={y => formatCurrency(y as number)}
