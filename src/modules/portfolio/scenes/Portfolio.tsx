@@ -1,8 +1,5 @@
-import { decodeUrlObj, encodeUrlObj, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@/modules/@utils';
-import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
-import useService from '@/modules/@utils/hooks/useService';
-import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
-import useThrottle from '@/modules/@utils/hooks/useThrottle';
+import { decodeUrlObj, encodeUrlObj, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@utils/index';
+import { useFormatCurrency, useService, useStateImmutable, useThrottle } from '@utils/index';
 import ResultsBox from '@/modules/algo-trading/components/ResultsBox';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
 import { AlgoConfig, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';

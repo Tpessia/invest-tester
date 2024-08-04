@@ -1,4 +1,4 @@
-import { changeUrl } from '@/modules/@utils';
+import { changeUrl } from '@utils/index';
 
 export enum AppEnv {
     TEST = 'TEST',

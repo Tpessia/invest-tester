@@ -1,5 +1,3 @@
-import { dateToIsoStr, downloadObj, toPercent } from '@/modules/@utils';
-import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import ResultCharts from '@/modules/algo-trading/components/ResultCharts';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus } from '@/modules/algo-trading/models/AlgoState';
@@ -7,6 +5,7 @@ import InfoPopover from '@/modules/core/components/InfoPopover';
 import GlobalContext from '@/modules/core/context/GlobalContext';
 import LayoutContext from '@/modules/layout/context/LayoutContext';
 import { DownloadOutlined, Loading3QuartersOutlined } from '@ant-design/icons';
+import { dateToIsoStr, downloadObj, toPercent, useFormatCurrency } from '@utils/index';
 import { Input, Spin, Table, Tabs, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { keyBy, round } from 'lodash-es';
@@ -35,6 +34,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
       if (props.result == null) return <></>;
 
       const formatVar = (v: number) => (<Typography.Text type={v >= 0 ? 'success' : 'danger'}>{v > 0 ? '+' : ''}{toPercent(v)}%</Typography.Text>);
+      const formatRisk = (v: number | undefined) => v != null ? round(v, 2) : 'N/A';
 
       return (
         <div className='algo-summary'>
@@ -53,7 +53,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
               Negative α: Underperformed benchmark<br/>
               Zero α: Matched benchmark
             </div>)} /></div>
-            <div>{round(props.result.summary.alpha, 2)}</div>
+            <div>{formatRisk(props.result.summary.alpha)}</div>
           </div>
           <div>
             <div>Lowest</div>
@@ -70,7 +70,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
               β {'>'} 1: More volatile<br/>
               β {'<'} 1: Less volatile
             </div>)} /></div>
-            <div>{round(props.result.summary.beta, 2)}</div>
+            <div>{formatRisk(props.result.summary.beta)}</div>
           </div>
           <div>
             <div>Highest</div>
@@ -85,7 +85,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
               Measures risk-adjusted performance<br/>
               Higher ratio indicates better risk-adjusted returns
             </div>)} /></div>
-            <div>{round(props.result.summary.sharpe, 2)}</div>
+            <div>{formatRisk(props.result.summary.sharpe)}</div>
           </div>
         </div>
       );

@@ -1,4 +1,4 @@
-import { installPWA } from '@/modules/@utils/pwa/service-worker';
+import { installPWA } from '@utils/index';
 import useSettings from '@/modules/layout/hooks/useSettings';
 import { DownloadOutlined, GithubOutlined, SettingOutlined } from '@ant-design/icons';
 import AppConfig from '@core/services/AppConfig';

@@ -1,6 +1,3 @@
-import useService from '@/modules/@utils/hooks/useService';
-import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
-import useThrottle from '@/modules/@utils/hooks/useThrottle';
 import ResultsBox from '@/modules/algo-trading/components/ResultsBox';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
 import { AlgoConfig, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
@@ -16,7 +13,7 @@ import InputAddon from '@core/components/InputAddon';
 import InputMask from '@core/components/InputMask';
 import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
-import { fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@utils/index';
+import { fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson, useService, useStateImmutable, useThrottle } from '@utils/index';
 import { Button, Checkbox, Col, Row, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useContext, useEffect } from 'react';

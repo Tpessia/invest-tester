@@ -1,7 +1,6 @@
-import useService from '@/modules/@utils/hooks/useService';
-import useThrottle from '@/modules/@utils/hooks/useThrottle';
 import { AssetDataService } from '@/modules/asset-data/services/AssetDataService';
 import { Loading3QuartersOutlined } from '@ant-design/icons';
+import { useService, useThrottle } from '@utils/index';
 import { AutoComplete, Select, Spin } from 'antd';
 import { DefaultOptionType } from 'antd/es/select';
 import { uniq } from 'lodash-es';

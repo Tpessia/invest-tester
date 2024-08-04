@@ -1,4 +1,4 @@
-import { jsonDateReviver } from '@/modules/@utils/data/json';
+import { jsonDateReviver } from '@utils/index';
 
 export function changeUrl(baseUrl: string, config: { hostname?: string, port?: string, path?: string, protocol?: string }) {
   const url = new URL(baseUrl);

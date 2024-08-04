@@ -1,7 +1,7 @@
-import { formatCurrency } from '@/modules/@utils';
 import { AlgoFunction } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoWorkspace } from '@/modules/algo-trading/models/AlgoWorkspace';
 import { Globals } from '@/modules/core/modles/Globals';
+import { formatCurrency } from '@utils/index';
 import { sum } from 'lodash-es';
 
 export const initialCode =
@@ -78,11 +78,11 @@ start();
 export interface StrategyBuyHoldProps {
   assets: { assetCode: string, percentual: number }[];
   initCash: number;
-  monthlyDeposits: number;
   start: Date;
   end: Date;
-  rebalance: boolean;
-  download: boolean;
+  monthlyDeposits?: number;
+  rebalance?: boolean;
+  download?: boolean;
 }
 
 export function strategyBuyHold(props: StrategyBuyHoldProps): AlgoFunction {

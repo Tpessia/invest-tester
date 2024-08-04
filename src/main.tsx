@@ -11,7 +11,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 );
 
-import { initInstallPWA, registerWorker } from '@/modules/@utils/pwa/service-worker.ts';
+import { initInstallPWA, registerWorker } from '@utils/index';
 
 initInstallPWA();
 registerWorker();

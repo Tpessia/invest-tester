@@ -1,4 +1,4 @@
-import { fromPercent, loadScript, toPercent } from '@/modules/@utils';
+import { fromPercent, loadScript, toPercent } from '@utils/index';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
 import { ChartProps } from '@/modules/core/components/Chart';
 import InputMask from '@/modules/core/components/InputMask';

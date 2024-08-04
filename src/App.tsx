@@ -1,5 +1,3 @@
-import { tryParseJson } from '@/modules/@utils';
-import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
 import AlgoDocs from '@/modules/algo-docs/scenes/AlgoDocs';
 import AlgoTrading from '@/modules/algo-trading/scenes/AlgoTrading';
 import AppLayout from '@/modules/layout/components/AppLayout';
@@ -7,6 +5,7 @@ import ErrorPage from '@/modules/layout/scenes/ErrorPage';
 import Portfolio from '@/modules/portfolio/scenes/Portfolio';
 import GlobalContext, { GlobalContextType } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
+import { tryParseJson, useStateImmutable } from '@utils/index';
 import { orderBy } from 'lodash-es';
 import { useEffect, useMemo } from 'react';
 import { Outlet, Route, RouterProvider, createBrowserRouter, createRoutesFromElements } from 'react-router-dom';

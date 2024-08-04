@@ -1,4 +1,4 @@
-import { addDate, getFirstOfYear, normalizeTimezone } from '@/modules/@utils';
+import { addDate, getFirstOfYear, normalizeTimezone } from '@utils/index';
 
 const countries = [
   { code: 'AE', name: 'United Arab Emirates', currency: 'AED', symbol: 'د.إ' },

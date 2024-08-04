@@ -1,4 +1,4 @@
-import { tryParseJson, tryStringifyJson } from '@/modules/@utils/data/json';
+import { tryParseJson, tryStringifyJson } from '@utils/index';
 
 export function getErrorMsg(err?: Error | string | any, debug: boolean = false) {
   console.error(err);

@@ -1,8 +1,8 @@
-import useRenderCount from '@/modules/@utils/hooks/useRenderCount';
+import { useRenderCount } from '@utils/index';
 import { DebouncedFunc, ThrottleSettings, debounce } from 'lodash-es';
 import { useCallback, useEffect, useRef } from 'react';
 
-export default function useDebounce<T extends (...args: any) => any>(callback: T, delay: number, options?: ThrottleSettings): DebouncedFunc<T> {
+export function useDebounce<T extends (...args: any) => any>(callback: T, delay: number, options?: ThrottleSettings): DebouncedFunc<T> {
   const renderCount = useRenderCount();
   const inputsRef = useRef({ callback, delay }); // mutable ref like with useThrottle
   useEffect(() => { inputsRef.current = { callback, delay }; }); //also track cur. delay

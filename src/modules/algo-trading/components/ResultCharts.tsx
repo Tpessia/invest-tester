@@ -1,7 +1,6 @@
-import { dateToIsoStr, pickEvenly, toPercent } from '@/modules/@utils';
-import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import Chart, { ChartProps } from '@core/components/Chart';
+import { dateToIsoStr, pickEvenly, toPercent, useFormatCurrency } from '@utils/index';
 import { round } from 'lodash-es';
 import React from 'react';
 
