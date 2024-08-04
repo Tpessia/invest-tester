@@ -7,7 +7,16 @@ export type InputMaskProps = {
 } & InputProps;
 
 const InputMask: React.FC<InputMaskProps> = (props) => {
-    const { maskProps, addonBefore, ...inputProps } = props;
+    let { maskProps, addonBefore, ...inputProps } = props;
+
+    maskProps = {
+        thousandSeparator: '.',
+        decimalSeparator: ',',
+        allowNegative: false,
+        fixedDecimalScale: true,
+        decimalScale: 2,
+        ...maskProps,
+    };
 
     const component = useCallback((props: any) => <Input addonBefore={addonBefore} {...inputProps as any} {...props as any} />, [...Object.values(inputProps)]);
 

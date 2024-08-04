@@ -21,6 +21,9 @@ export interface AlgoResultSummary {
   high: number;
   low: number;
   nTrades: number;
+  alpha: number;
+  beta: number;
+  sharpe: number;
 }
 
 export interface AlgoResultPerformance {

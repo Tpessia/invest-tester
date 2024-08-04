@@ -1,12 +1,13 @@
 import { dateToIsoStr, pickEvenly, toPercent } from '@/modules/@utils';
 import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
-import Chart from '@core/components/Chart';
+import Chart, { ChartProps } from '@core/components/Chart';
 import { round } from 'lodash-es';
 import React from 'react';
 
 interface Props {
   result?: AlgoResult;
+  chartType?: ChartProps['type'];
 }
 
 const Performance: React.FC<Props> = (props) => {
@@ -17,6 +18,7 @@ const Performance: React.FC<Props> = (props) => {
   return (
     <Chart
       data={[{ id: 'result', data }]}
+      type={props.chartType}
       maxOffset={true}
       xFormarter={x => dateToIsoStr(x as Date)}
       yFormarter={y => formatCurrency(y as number)}
@@ -48,6 +50,8 @@ const Positions: React.FC<Props> = (props) => {
   return (
     <Chart
       data={data}
+      type={props.chartType}
+      minOffset={true}
       maxOffset={true}
       labelPrefix={p => `${p.serieId}: `}
       xFormarter={x => dateToIsoStr(x as Date)}
@@ -66,8 +70,9 @@ const Quantities: React.FC<Props> = (props) => {
   return (
     <Chart
       data={data}
-      maxOffset={true}
+      type={props.chartType}
       minOffset={true}
+      maxOffset={true}
       labelPrefix={p => `${p.serieId}: `}
       xFormarter={x => dateToIsoStr(x as Date)}
     />
@@ -86,9 +91,9 @@ const Prices: React.FC<Props> = (props) => {
   return (
     <Chart
       data={data}
-      type='log'
-      maxOffset={true}
+      type={props.chartType}
       minOffset={true}
+      maxOffset={true}
       labelPrefix={p => `${p.serieId}: `}
       xFormarter={x => dateToIsoStr(x as Date)}
       yFormarter={y => formatCurrency(y as number)}

@@ -1,6 +1,7 @@
 import { AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
 import { AssetPortfolio } from '@/modules/algo-trading/models/AssetPortfolio';
 import { AssetTrade, AssetTradeSide } from '@/modules/algo-trading/models/AssetTrade';
+import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
 import { AssetDataFlat } from '@/modules/asset-data/models/AssetData';
 import { dateToIsoStr, downloadObj, hash, loadScript } from '@utils/index';
 import EventLite from 'event-lite';
@@ -21,6 +22,8 @@ export interface AlgoWorkspaceSend {
 }
 
 export class AlgoWorkspace extends EventLite {
+  _algoService?: AlgoService;
+
   // State
 
   state: any = {};

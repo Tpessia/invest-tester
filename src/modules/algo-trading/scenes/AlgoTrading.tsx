@@ -3,16 +3,17 @@ import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
 import useThrottle from '@/modules/@utils/hooks/useThrottle';
 import ResultsBox from '@/modules/algo-trading/components/ResultsBox';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
-import { AlgoInputs, initialCode } from '@/modules/algo-trading/models/AlgoInputs';
+import { AlgoConfig, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
+import { initialCode } from '@/modules/algo-trading/models/AlgoStrategies';
 import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
 import InfoPopover from '@/modules/core/components/InfoPopover';
 import LayoutContext from '@/modules/layout/context/LayoutContext';
 import CodeEditor from '@core/components/CodeEditor';
 import DateRangePicker from '@core/components/DateRangePicker';
 import InputAddon from '@core/components/InputAddon';
-import InputMask, { InputMaskProps } from '@core/components/InputMask';
+import InputMask from '@core/components/InputMask';
 import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
 import { fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@utils/index';
@@ -57,11 +58,7 @@ const AlgoTrading: React.FC = () => {
 
   // Dependencies
 
-  const algoService = useService(AlgoService, svc => svc.init(s => setState({
-    status: { $set: s.status },
-    messages: { $set: s.messages },
-    // progress: { $set: s.progress },
-  })));
+  const algoService = useService(AlgoService);
 
   // Effects
 
@@ -74,14 +71,6 @@ const AlgoTrading: React.FC = () => {
   }, 2000, { leading: false }), [state.algoCode]);
 
   // Values
-
-  const maskProps: InputMaskProps['maskProps'] = {
-    thousandSeparator: '.',
-    decimalSeparator: ',',
-    allowNegative: false,
-    fixedDecimalScale: true,
-    decimalScale: 2,
-  };
 
   const hasResult = state.result != null || state.messages.warnings.concat(state.messages.warnings).length > 0;
 
@@ -114,11 +103,20 @@ const AlgoTrading: React.FC = () => {
         initMargin: state.inputs.initMargin,
         minMargin: state.inputs.minMargin,
       };
-      const result = await algoService.startEval(inputs, state.algoCode);
+      const config: AlgoConfig = {
+        riskFreeRate: globalContext.settings.riskFreeRate,
+        marketBenchmark: globalContext.settings.marketBenchmark,
+      };
+
+      const result = await algoService.init(config, s => setState({
+        status: { $set: s.status },
+        messages: { $set: s.messages },
+        // progress: { $set: s.progress },
+      })).startEval(inputs, state.algoCode);
 
       setState({ result: { $set: result } });
     } catch (err: any) {
-      setState({ messages: { warnings: { $push: [getErrorMsg(err, globalContext.debug)] } }, status: { $set: 'error' } });
+      setState({ messages: { warnings: { $push: [getErrorMsg(err, globalContext.settings.debug)] } }, status: { $set: 'error' } });
     }
   };
 
@@ -165,7 +163,6 @@ const AlgoTrading: React.FC = () => {
               type='text'
               addonBefore='Balance'
               maskProps={{
-                ...maskProps,
                 prefix: `${globalContext.currency.symbol} `,
                 allowNegative: false,
                 value: state.inputs.initCash,
@@ -207,7 +204,6 @@ const AlgoTrading: React.FC = () => {
                   type='text'
                   addonBefore={<InfoPopover content='Init. Margin' width={275} popover='Balance needed to open a short trade (Init. Margin > Balance / Short Trade)' />}
                   maskProps={{
-                    ...maskProps,
                     suffix: '%',
                     value: toPercent(state.inputs.initMargin),
                     onValueChange: (values) => setState({ inputs: { initMargin: { $set: fromPercent(+values.value) } } }),
@@ -219,7 +215,6 @@ const AlgoTrading: React.FC = () => {
                   type='text'
                   addonBefore={<InfoPopover content='Min. Margin' width={325} popover='Minimum value needed to keep a short position (Min. Margin > Balance / Short Position)' />}
                   maskProps={{
-                    ...maskProps,
                     suffix: '%',
                     value: toPercent(state.inputs.minMargin),
                     onValueChange: (values) => setState({ inputs: { minMargin: { $set: fromPercent(+values.value) } } }),
@@ -253,7 +248,7 @@ const AlgoTrading: React.FC = () => {
           </Row>
         </Col>
         <Col className='algo-output' xs={24} lg={12}>
-          <Row gutter={[{ xs: 8, sm: 16 }, { xs: 8, sm: 16 }]}>
+          <Row gutter={[{ xs: 20, sm: 16 }, { xs: 20, sm: 16 }]}>
             <Col className='algo-results' xs={24}>
               <ResultsBox.Perfomance status={state.status} result={state.result}  />
             </Col>

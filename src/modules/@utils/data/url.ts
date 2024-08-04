@@ -1,3 +1,5 @@
+import { jsonDateReviver } from '@/modules/@utils/data/json';
+
 export function changeUrl(baseUrl: string, config: { hostname?: string, port?: string, path?: string, protocol?: string }) {
   const url = new URL(baseUrl);
 
@@ -9,7 +11,15 @@ export function changeUrl(baseUrl: string, config: { hostname?: string, port?: s
   return url.toString();
 }
 
-export function writeObjToUrl(obj: object): URLSearchParams {
+export function encodeUrlObj(obj: object): string {
+  return btoa(JSON.stringify(obj));
+}
+
+export function decodeUrlObj(encoded: string): object {
+  return JSON.parse(atob(encoded), jsonDateReviver);
+}
+
+export function encodeUrlObjFlat(obj: object): URLSearchParams {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(obj)) {
     params.append(key, JSON.stringify(value));
@@ -17,21 +27,10 @@ export function writeObjToUrl(obj: object): URLSearchParams {
   return params;
 }
 
-export function readObjFromUrl(params: URLSearchParams): object {
+export function decodeUrlObjFlat(params: URLSearchParams): object {
   const obj: any = {};
   for (const [key, value] of params.entries()) {
     obj[key] = JSON.parse(value);
   }
   return obj;
-}
-
-export function encodeUrlParams(obj: object): string {
-  const url = writeObjToUrl(obj);
-  const encoded = btoa(url.toString());
-  return encoded;
-}
-
-export function decodeUrlParams(encoded: string): object {
-  const url = atob(encoded);
-  return readObjFromUrl(new URLSearchParams(url));
 }

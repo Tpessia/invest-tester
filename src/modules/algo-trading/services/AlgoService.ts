@@ -1,4 +1,4 @@
-import { AlgoFunction, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
+import { AlgoConfig, AlgoFunction, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoResult, AlgoResultPerformance, AlgoResultSummary } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoState, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
 import { AlgoWorkspace } from '@/modules/algo-trading/models/AlgoWorkspace';
@@ -7,13 +7,15 @@ import { AssetTrade, AssetTradeSide } from '@/modules/algo-trading/models/AssetT
 import { AssetDataFlat } from '@/modules/asset-data/models/AssetData';
 import { AssetDataService } from '@/modules/asset-data/services/AssetDataService';
 import { Globals } from '@/modules/core/modles/Globals';
-import { addDate, averageDatesPerYear, dateToIsoStr, getErrorMsg, mutableUpdate, normalizeTimezone } from '@utils/index';
+import { addDate, averageDatesPerYear, calculateAlpha, calculateBeta, calculateSharpeRatio, dateToIsoStr, getErrorMsg, mutableUpdate, normalizeTimezone, standardDeviation } from '@utils/index';
 import { Spec } from 'immutability-helper';
 import { cloneDeep, groupBy, maxBy, minBy, round, sortBy, uniqBy } from 'lodash-es';
 import { inject, injectable } from 'tsyringe';
 
 @injectable()
 export class AlgoService {
+  config?: AlgoConfig;
+
   state!: AlgoState;
   workspace: AlgoWorkspace = new AlgoWorkspace();
   workspaceListeners: Record<string, Function[]> = {};
@@ -29,12 +31,13 @@ export class AlgoService {
 
   // Events
 
-  init(onUpdate?: (state: AlgoState) => any) {
+  init(config?: AlgoConfig, onUpdate?: (state: AlgoState) => any) {
+    this.config = config;
     this.onUpdate = onUpdate;
     return this;
   }
 
-  async start(inputs: AlgoInputs, algo: AlgoFunction, algoStr?: string) {
+  async start(inputs: AlgoInputs, algo: AlgoFunction) {
     if (this.state?.status === 'running') return;
 
     const emitEvent = (event: string, ...args: any[]) =>
@@ -79,7 +82,6 @@ export class AlgoService {
       if (isYoungData || isOldData) oldDataMsgs.push(`[${asset}] Data range (${dateToIsoStr(firstAssetDate)}->${dateToIsoStr(lastAssetDate)}) is smaller then requested range (${dateToIsoStr(inputs.start)}->${dateToIsoStr(inputs.end)})`);
     }
 
-    // TODO: review? e.g. EURUSD=X 2023-10-22 domingo
     // this.dateRange = businessDaysRange(firstAssetDate, lastAssetDate);
     this.dateRange = sortBy(Object.keys(this.assetTimeSeries).map(e => normalizeTimezone(new Date(e))));
 
@@ -90,8 +92,9 @@ export class AlgoService {
 
     // Reset State
 
-    this.state = new AlgoState(firstAssetDate, lastAssetDate, inputs, algoStr ?? algo.toString());
+    this.state = new AlgoState(firstAssetDate, lastAssetDate, inputs, this.config?.algoStr ?? algo.toString());
     this.workspace = new AlgoWorkspace();
+    this.workspace._algoService = this;
     this.updateState({
       status: { $set: 'running' },
       progress: { $set: 0 },
@@ -240,7 +243,9 @@ export class AlgoService {
 
     async function algo(this: any) { await evalAsync.bind(this)(algoCode); }
 
-    return await this.start(inputs, algo, algoCode);
+    this.config = { ...this.config ?? {}, algoStr: algoCode };
+
+    return await this.start(inputs, algo);
   }
 
   stop() {
@@ -437,6 +442,15 @@ export class AlgoService {
 
     const nTrades = Object.values(this.state.tradeHist).flatMap(e => e).filter(t => t.status === 'filled').length;
 
+    const dailyVar = Math.pow(1 + annualVar, 1 / avgDaysPerYear) - 1;
+    const dailyRiskFreeRate = this.config?.riskFreeRate && Math.pow(1 + this.config?.riskFreeRate, 1 / avgDaysPerYear) - 1;
+    const marketReturns = performance.map(e => e.prevVariation); // TODO: algoService.start(this.config?.marketBenchmark).performance.map(e => e.prevVariation), prevent recursion, ensure stateless
+    const marketReturn = undefined; // TODO: algoService.start(this.config?.marketBenchmark).annualVar
+    const stdDev = standardDeviation(performance.map(e => e.prevVariation)); // TODO: which time scale? (days, months, years)
+    const beta = calculateBeta(performance.map(e => e.prevVariation), marketReturns);
+    const alpha = calculateAlpha(annualVar, beta, this.config?.riskFreeRate, marketReturn);
+    const sharpe = calculateSharpeRatio(dailyVar, stdDev, dailyRiskFreeRate);
+
     const summary: AlgoResultSummary = {
       initCash,
       finalCash,
@@ -445,6 +459,9 @@ export class AlgoService {
       high,
       low,
       nTrades,
+      alpha,
+      beta,
+      sharpe,
     };
 
     const assetHist = groupBy(

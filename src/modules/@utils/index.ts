@@ -2,6 +2,7 @@ export * from './data/array';
 export * from './data/date';
 export * from './data/dom';
 export * from './data/encoding';
+export * from './data/finance';
 export * from './data/json';
 export * from './data/mutable-update';
 export * from './data/number';

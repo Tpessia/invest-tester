@@ -35,7 +35,7 @@ export const formatCurrency = (value: number, config?: NumericFormatProps) => nu
   ...config,
 });
 
-export function findBestLogBase(values: number[]) {
+export function findBestLogBase(values: number[], round: boolean = true) {
   const min = Math.min(...values.filter(v => v > 0));
   const max = Math.max(...values);
 
@@ -57,5 +57,19 @@ export function findBestLogBase(values: number[]) {
     }
   }
 
-  return bestBase;
+  return round ? roundLogBase(bestBase, 10) : bestBase;
+}
+
+export function roundLogBase(value: number, base: number = 10): number {
+  return Math.pow(base, Math.ceil(Math.log(value) / Math.log(base)));
+}
+
+export function generateLogScale(minValue: number, maxValue: number, base: number = 10, steps: number = 5): number[] {
+  const start = Math.floor(Math.log(minValue) / Math.log(base));
+  const end = Math.ceil(Math.log(maxValue) / Math.log(base));
+  const range = end - start;
+  return Array.from({length: steps}, (_, i) => {
+    const exp = start + (i * range / (steps - 1));
+    return Math.pow(base, Math.round(exp));
+  });
 }

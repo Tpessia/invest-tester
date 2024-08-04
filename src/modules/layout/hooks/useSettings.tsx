@@ -1,12 +1,22 @@
-import { loadScript } from '@/modules/@utils';
+import { fromPercent, loadScript, toPercent } from '@/modules/@utils';
+import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
+import { ChartProps } from '@/modules/core/components/Chart';
+import InputMask from '@/modules/core/components/InputMask';
 import GlobalContext from '@/modules/core/context/GlobalContext';
+import { Globals } from '@/modules/core/modles/Globals';
 import variables from '@/styles/variables';
-import { Button, Modal, Switch } from 'antd';
+import { Button, Modal, Select, Switch } from 'antd';
 import { useContext } from 'react';
+import './SettingsModal.scss';
 
-export default function useSettings() {
+const SettingsModal: React.FC = ()  => {
   const globalContext = useContext(GlobalContext);
-  const [modal, modalNode] = Modal.useModal();
+
+  const setSettings = (settings: Partial<typeof Globals.settings>) => {
+    const newSettings = { ...globalContext.settings, ...settings };
+    globalContext.setContext({ settings: { $set: newSettings } });
+    localStorage.setItem(Globals.cache.settings, JSON.stringify(newSettings));
+  };
 
   const handleReset = () => {
     const reset = window.confirm('Are you sure you want to reset all inputs?\nIt is recommended to save a copy of the inputs and code before continuing!');
@@ -17,7 +27,7 @@ export default function useSettings() {
   };
 
   const handleDebug = async (on: boolean) => {
-    globalContext.setContext({ debug: { $set: on } });
+    setSettings({ debug: on });
 
     const oldScripts = document.querySelectorAll('.eruda-script');
     oldScripts.forEach(script => script?.remove());
@@ -35,18 +45,56 @@ export default function useSettings() {
     }
   };
 
-  const openModal = () => modal.info({
-    title: <div style={{ marginBottom: '15px' }}>Settings</div>,
-    content: (<>
-      <div style={{ display: 'flex', marginBottom: '15px' }}>
-        <span style={{ marginRight: '10px', flex: 1 }}>Reset all inputs and code</span>
+  return (
+    <div className='settings-modal'>
+      <div className='item'>
+        <span className='label'>Reset all inputs and code</span>
         <Button type='primary' onClick={handleReset}>Reset</Button>
       </div>
-      <div style={{ display: 'flex', marginBottom: '15px' }}>
-        <span style={{ marginRight: '10px', flex: 1 }}>Debug</span>
-        <Switch defaultChecked={globalContext.debug} onChange={handleDebug} />
+      <div className='item'>
+        <span className='label'>Debug</span>
+        <Switch defaultChecked={globalContext.settings.debug} onChange={handleDebug} />
       </div>
-    </>),
+      <div className='item'>
+        <span className='label'>Chart Type</span>
+        <Select
+          value={globalContext.chartType}
+          onChange={e => globalContext.setContext({ chartType: { $set: e as ChartProps['type'] } })}
+          dropdownStyle={{ minWidth: 110 }}
+          options={[{ value: 'linear', label: <span>Linear</span> }, { value: 'log', label: <span>Log</span> }]}
+        />
+      </div>
+      <div className='item'>
+        <span className='label'>Risk Free Rate</span>
+        <span style={{ width: '80px' }}>
+          <InputMask
+            maskProps={{
+              suffix: '%',
+              value: toPercent(globalContext.settings.riskFreeRate),
+              onValueChange: (values) => setSettings({ riskFreeRate: fromPercent(+values.value) }),
+            }}
+          />
+          </span>
+      </div>
+      <div className='item'>
+        <span className='label'>Market Benchmark</span>
+        <span style={{ width: '80px' }}>
+          <TickersSelector.Single
+            ticker={globalContext.settings.marketBenchmark}
+            onChange={e => setSettings({ marketBenchmark: e })}
+          />
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export default function useSettings() {
+  const [modal, modalNode] = Modal.useModal();
+
+  const openModal = () => modal.info({
+    title: <div style={{ marginBottom: '15px' }}>Settings</div>,
+    content: <SettingsModal />,
     icon: null,
     closable: true,
     maskClosable: true,

@@ -1,13 +1,14 @@
-import { fromPercent, getErrorMsg, jsonDateReviver, decodeUrlParams, toPercent, tryParseJson, encodeUrlParams } from '@/modules/@utils';
+import { decodeUrlObj, encodeUrlObj, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@/modules/@utils';
 import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import useService from '@/modules/@utils/hooks/useService';
 import useStateImmutable from '@/modules/@utils/hooks/useStateImmutable';
 import useThrottle from '@/modules/@utils/hooks/useThrottle';
 import ResultsBox from '@/modules/algo-trading/components/ResultsBox';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
-import { AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
+import { AlgoConfig, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
+import { strategyBuyHold, StrategyBuyHoldProps } from '@/modules/algo-trading/models/AlgoStrategies';
 import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
 import { MinusOutlined, PlusOutlined, ShareAltOutlined } from '@ant-design/icons';
 import DateRangePicker from '@core/components/DateRangePicker';
@@ -18,23 +19,14 @@ import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
 import { Button, Checkbox, Col, notification, Row, Space } from 'antd';
 import dayjs from 'dayjs';
-import { round, sum, uniqBy } from 'lodash-es';
+import { round, uniqBy } from 'lodash-es';
 import { useContext, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { NumericFormatProps } from 'react-number-format';
 import { useLocation } from 'react-router-dom';
 import './Portfolio.scss';
 
 interface State {
-  inputs: {
-    assets: { assetCode: string, percentual: number }[];
-    initCash: number;
-    monthlyDeposits: number,
-    start: Date;
-    end: Date;
-    rebalance: boolean;
-    download: boolean;
-  };
+  inputs: StrategyBuyHoldProps;
   status: AlgoStatus;
   messages: AlgoMessages;
   progress: number;
@@ -67,11 +59,7 @@ const Portfolio: React.FC = () => {
 
   const [nApi, nContext] = notification.useNotification();
 
-  const algoService = useService(AlgoService, svc => svc.init(s => setState({
-    status: { $set: s.status },
-    messages: { $set: s.messages },
-    // progress: { $set: s.progress },
-  })));
+  const algoService = useService(AlgoService);
 
   // State
 
@@ -83,7 +71,7 @@ const Portfolio: React.FC = () => {
     if (location.search) {
       const inputs = new URLSearchParams(location.search).get(shareLinkParam);
       if (inputs) {
-        const { assets, initCash, monthlyDeposits, start, end, rebalance, download } = decodeUrlParams(inputs) as State['inputs'];
+        const { assets, initCash, monthlyDeposits, start, end, rebalance, download } = decodeUrlObj(inputs) as State['inputs'];
         setState({ inputs: { $set: { assets, initCash, monthlyDeposits, start, end, rebalance, download } } });
       }
     }
@@ -94,14 +82,6 @@ const Portfolio: React.FC = () => {
   }, 1000, { leading: false }), [...Object.values(state.inputs)]);
 
   // Values
-
-  const maskProps: NumericFormatProps = {
-    thousandSeparator: '.',
-    decimalSeparator: ',',
-    allowNegative: false,
-    fixedDecimalScale: true,
-    decimalScale: 2,
-  };
 
   const hasResult = state.result != null || state.messages.warnings.concat(state.messages.warnings).length > 0;
 
@@ -143,91 +123,21 @@ const Portfolio: React.FC = () => {
         initMargin: 0,
         minMargin: 0,
       };
-      const result = await algoService.init(s => setState({
+      const config: AlgoConfig = {
+        riskFreeRate: globalContext.settings.riskFreeRate,
+        marketBenchmark: globalContext.settings.marketBenchmark,
+      };
+
+      const result = await algoService.init(config, s => setState({
         status: { $set: s.status },
         messages: { $set: s.messages },
         // progress: { $set: s.progress },
-      })).start(inputs, async function () {
-        this.on('start', async (next) => {
-          this.state.prevDate = this.date;
-          this.state.assetDates = state.inputs.assets.reduce((acc, val) => ({
-            ...acc,
-            [val.assetCode]: {
-              start: algoService.getFirstAsset(val.assetCode)!.date,
-              end: algoService.getLastAsset(val.assetCode)!.date,
-            }
-          }), {} as Record<string, { start: Date, end: Date }>);
-          next();
-        });
-
-        this.on('data', async (next) => {
-          const nextMonth = new Date(this.state.prevDate.getFullYear(), this.state.prevDate.getMonth() + 1, this.state.prevDate.getDate(), 0, 0, 0);
-          const isNewMonth = this.date.getTime() > nextMonth.getTime();
-
-          if (isNewMonth) {
-            this.state.prevDate = this.date;
-            if (state.inputs.monthlyDeposits) {
-              this.print(`Depositing: ${formatCurrency(state.inputs.monthlyDeposits)}`);
-              this.injectCash(state.inputs.monthlyDeposits);
-            }
-          }
-
-          const totalValue = this.portfolio.total;
-          let targetAssetValues = state.inputs.assets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * val.percentual }), {} as Record<string, any>);
-
-          if (state.inputs.rebalance) {
-            const activeAssets = state.inputs.assets.filter(e => this.date >= this.state.assetDates[e.assetCode].start && this.state.assetDates[e.assetCode].end >= this.date);
-            const activePercent = sum(activeAssets.map(e => e.percentual));
-            targetAssetValues = activeAssets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * (val.percentual + (1 - activePercent) * (val.percentual / activePercent)) }), {} as Record<string, number>);
-          }
-
-          let cash = this.portfolio.cash;
-          for (let i in this.assets) {
-            const asset = this.assets[i];
-            const portAsset = this.portfolio.assets[asset.assetCode];
-
-            const targetValue = targetAssetValues[asset.assetCode] ?? 0;
-            const currentValue = (portAsset?.value ?? 0) * (portAsset?.quantity ?? 0);
-
-            const diffAmount = targetValue - currentValue;
-            const diffAmountMin = Math.min(diffAmount, cash);
-
-            const diffQnt = diffAmountMin > 0 ? Math.floor(diffAmountMin / asset.value) : Math.ceil(diffAmountMin / asset.value);
-            const currency = globalContext.currencyOptions.find(e => e.currency === asset.currency)?.symbol ?? asset.currency ?? globalContext.currency.symbol;
-
-            if (diffQnt > 0) {
-              cash -= diffAmountMin;
-              const canBuy = state.inputs.rebalance || currentValue === 0;
-              if (canBuy) {
-                this.print(`[${asset.assetCode}] Buying ${diffQnt} x ${formatCurrency(asset.value, { prefix: `${currency} ` })}`);
-                this.buy(asset.assetCode, diffQnt);
-              }
-            } else if (diffQnt < 0) {
-              const canRebalance = state.inputs.rebalance && isNewMonth;
-              if (canRebalance) {
-                this.print(`[${asset.assetCode}] Rebalancing: ${diffQnt} x ${formatCurrency(asset.value, { prefix: `${currency} ` })}`);
-                this.sell(asset.assetCode, -diffQnt);
-              }
-            }
-          }
-          next();
-        });
-
-        this.on('end', async (next, result) => {
-          if (state.inputs.download) this.download(result, 'result');
-          next();
-        });
-
-        this.on('error', async (next, errors) => {
-          this.print('Error:', JSON.stringify(errors));
-          next();
-        });
-      });
+      })).start(inputs, strategyBuyHold(state.inputs));
 
       console.log('result', result);
       setState({ result: { $set: result } });
     } catch (err: any) {
-      setState({ messages: { warnings: { $push: [getErrorMsg(err, globalContext.debug)] } }, status: { $set: 'error' } });
+      setState({ messages: { warnings: { $push: [getErrorMsg(err, globalContext.settings.debug)] } }, status: { $set: 'error' } });
     }
   };
 
@@ -236,7 +146,7 @@ const Portfolio: React.FC = () => {
   };
 
   const handleShare = () => {
-    const urlParams = encodeUrlParams(state.inputs);
+    const urlParams = encodeUrlObj(state.inputs);
     const shareLink = new URL(window.location.href);
     shareLink.searchParams.append(shareLinkParam, urlParams);
     navigator.clipboard.writeText(shareLink.toString()).then(
@@ -277,7 +187,6 @@ const Portfolio: React.FC = () => {
                 type='text'
                 addonBefore='Balance'
                 maskProps={{
-                  ...maskProps,
                   prefix: `${globalContext.currency.symbol} `,
                   allowNegative: false,
                   value: state.inputs.initCash,
@@ -290,7 +199,6 @@ const Portfolio: React.FC = () => {
                 type='text'
                 addonBefore={<InfoPopover content='Deposits' popover='Monthly Deposits' />}
                 maskProps={{
-                  ...maskProps,
                   prefix: `${globalContext.currency.symbol} `,
                   allowNegative: false,
                   value: state.inputs.monthlyDeposits,
@@ -350,7 +258,7 @@ const Portfolio: React.FC = () => {
                     <InputAddon forceUnround addonBefore={<InfoPopover content='Ticker' width={375} popover={Globals.inputs.tickerPopover} />}>
                       <TickersSelector.Single
                         ticker={asset.assetCode}
-                        onChange={e => setState({ inputs: { assets: { [i]: { assetCode: { $set: e?.trim() ?? '' } } } } })}
+                        onChange={e => setState({ inputs: { assets: { [i]: { assetCode: { $set: e ?? '' } } } } })}
                       />
                     </InputAddon>
                   </Col>
@@ -359,7 +267,6 @@ const Portfolio: React.FC = () => {
                       type='text'
                       addonBefore='Percent'
                       maskProps={{
-                        ...maskProps,
                         suffix: '%',
                         value: toPercent(asset.percentual),
                         onValueChange: (values) => setState({ inputs: { assets: { [i]: { percentual: { $set: fromPercent(+values.value) } } } } }),
@@ -391,7 +298,7 @@ const Portfolio: React.FC = () => {
         </div>
       </Col>
       <Col className='portfolio-output' xs={24} lg={12}>
-        <Row gutter={[{ xs: 8, sm: 16 }, { xs: 8, sm: 16 }]}>
+        <Row gutter={[{ xs: 20, sm: 16 }, { xs: 20, sm: 16 }]}>
           <Col className='portfolio-results' xs={24}>
             <ResultsBox.Perfomance status={state.status} result={state.result}  />
           </Col>

@@ -1,14 +1,15 @@
-import { dateToIsoStr, toPercent } from '@/modules/@utils';
+import { dateToIsoStr, downloadObj, toPercent } from '@/modules/@utils';
 import useFormatCurrency from '@/modules/@utils/hooks/useFormatCurrency';
 import ResultCharts from '@/modules/algo-trading/components/ResultCharts';
 import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus } from '@/modules/algo-trading/models/AlgoState';
+import InfoPopover from '@/modules/core/components/InfoPopover';
 import GlobalContext from '@/modules/core/context/GlobalContext';
 import LayoutContext from '@/modules/layout/context/LayoutContext';
-import { Loading3QuartersOutlined } from '@ant-design/icons';
+import { DownloadOutlined, Loading3QuartersOutlined } from '@ant-design/icons';
 import { Input, Spin, Table, Tabs, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
-import { keyBy } from 'lodash-es';
+import { keyBy, round } from 'lodash-es';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './ResultsBox.scss';
@@ -38,10 +39,6 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
       return (
         <div className='algo-summary'>
           <div>
-            <div>Init</div>
-            <div>{formatCurrency(props.result.summary.initCash)}</div>
-          </div>
-          <div>
             <div>Final</div>
             <div>{formatCurrency(props.result.summary.finalCash)}</div>
           </div>
@@ -50,21 +47,46 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
             <div>{formatVar(props.result.summary.totalVar)}</div>
           </div>
           <div>
+            <div><InfoPopover content='Alpha (α)' popover={(<div>
+              Excess return relative to benchmark, adjusted for risk<br/>
+              Positive α: Outperformed benchmark<br/>
+              Negative α: Underperformed benchmark<br/>
+              Zero α: Matched benchmark
+            </div>)} /></div>
+            <div>{round(props.result.summary.alpha, 2)}</div>
+          </div>
+          <div>
             <div>Lowest</div>
             <div>{formatCurrency(props.result.summary.low)}</div>
+          </div>
+          <div>
+            <div>Annual Var</div>
+            <div>{formatVar(props.result.summary.annualVar)}</div>
+          </div>
+          <div>
+            <div><InfoPopover content='Beta (β)' popover={(<div>
+              Measures portfolio volatility relative to the market<br/>
+              β = 1: Moves perfectly with the market<br/>
+              β {'>'} 1: More volatile<br/>
+              β {'<'} 1: Less volatile
+            </div>)} /></div>
+            <div>{round(props.result.summary.beta, 2)}</div>
           </div>
           <div>
             <div>Highest</div>
             <div>{formatCurrency(props.result.summary.high)}</div>
           </div>
           <div>
-            <div>Annual Var</div>
-            <div>{formatVar(props.result.summary.annualVar)}</div>
-          </div>
-          {/* <div>
             <div>#Trades</div>
             <div>{props.result.summary.nTrades}</div>
-          </div> */}
+          </div>
+          <div>
+            <div><InfoPopover content='Sharpe Ratio' popover={(<div>
+              Measures risk-adjusted performance<br/>
+              Higher ratio indicates better risk-adjusted returns
+            </div>)} /></div>
+            <div>{round(props.result.summary.sharpe, 2)}</div>
+          </div>
         </div>
       );
     },
@@ -72,27 +94,27 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
   {
     label: 'Performance',
     key: 'performanceChart',
-    component: () => <ResultCharts.Performance result={props.result} />,
+    component: () => <ResultCharts.Performance result={props.result} chartType={globalContext.chartType} />,
   },
   {
     label: 'Drawdown',
     key: 'drawdownChart',
-    component: () => <ResultCharts.Drawdown result={props.result} />,
+    component: () => <ResultCharts.Drawdown result={props.result} chartType={globalContext.chartType} />,
   },
   {
     label: 'Positions',
     key: 'positionsChart',
-    component: () => <ResultCharts.Positions result={props.result} />,
+    component: () => <ResultCharts.Positions result={props.result} chartType={globalContext.chartType} />,
   },
   {
     label: 'Quantities',
     key: 'quantitiesChart',
-    component: () => <ResultCharts.Quantities result={props.result} />,
+    component: () => <ResultCharts.Quantities result={props.result} chartType={globalContext.chartType} />,
   },
   {
     label: 'Prices',
     key: 'pricesChart',
-    component: () => <ResultCharts.Prices result={props.result} />,
+    component: () => <ResultCharts.Prices result={props.result} chartType={globalContext.chartType} />,
   }, {
     label: 'TimeSeries',
     key: 'timeseries',
@@ -128,10 +150,12 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
 
       return (
         <div className='algo-timeseries'>
+          <DownloadOutlined className='timeseries-download'
+            onClick={() => downloadObj(props.result!.assetHist, 'asset-timeseries.invest-tester')} />
           <Table
-            virtual dataSource={dataSource}
+            dataSource={dataSource}
             columns={columns} size='small'
-            pagination={{ simple: true, pageSize: layoutContext.isMobile ? 6 : 7 }}
+            pagination={{ simple: true, pageSize: 6, showSizeChanger: false }}
           />
         </div>
       );

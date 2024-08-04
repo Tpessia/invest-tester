@@ -1,4 +1,4 @@
-import { initialCode } from '@/modules/algo-trading/models/AlgoInputs';
+import { initialCode } from '@/modules/algo-trading/models/AlgoStrategies';
 import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
 import { AssetType } from '@/modules/asset-data/models/AssetType';
 import { AssetDataService } from '@/modules/asset-data/services/AssetDataService';

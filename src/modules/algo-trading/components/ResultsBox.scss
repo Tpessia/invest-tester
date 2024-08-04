@@ -25,18 +25,14 @@
 }
 
 .output-box {
-  min-height: 340px !important;
-  height: 500px !important;
+  display: flex;
+  position: relative;
   border: 5px solid $body-secundary !important;
+  height: 340px !important;
 
   @media (min-width: $size-md) {
     height: 100% !important;
   }
-}
-
-div.output-box {
-  display: flex;
-  position: relative;
 
   .processing {
     flex: 1;
@@ -65,7 +61,7 @@ div.output-box {
 
   .algo-summary {
     display: grid;
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
     grid-template-columns: repeat(3, 1fr);
 
     flex: 1;
@@ -121,10 +117,24 @@ div.output-box {
 
     .ant-table-cell {
       padding: 6px 8px !important;
+
+      @media (min-width: $size-md) {
+        padding: 5px 8px !important;
+      }
     }
 
     .ant-pagination {
       margin: 7px 0 !important;
+    }
+
+    .timeseries-download {
+      position: absolute;
+      padding: 10px;
+      left: 0px;
+      bottom: 0px;
+      font-size: 17px;
+      cursor: pointer;
+      z-index: 1;
     }
   }
 

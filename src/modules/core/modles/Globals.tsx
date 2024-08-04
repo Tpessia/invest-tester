@@ -76,6 +76,7 @@ function getCurrencyPairs(symbols: string[]) {
 export const Globals = {
   cache: {
     currency: 'global:currency',
+    settings: 'global:settings',
     algoCode: 'algo:code',
     algoInputs: 'algo:inputs',
     portfolioInputs: 'portfolio:inputs',
@@ -83,6 +84,7 @@ export const Globals = {
   countries: {
     countries,
     currencyPairs: getCurrencyPairs(countries.map(e => e.currency)),
+    currencyMap: countries.reduce((acc, c) => ({ ...acc, [c.currency]: c }), {} as Record<string, any>),
   },
   inputs: {
     mode: 'USD',
@@ -106,5 +108,10 @@ export const Globals = {
       let [_, code, currency, rate] = ticker.match(Globals.ticker.regex())!;
       return `${code}:${toCurrency}${rate != null ? `*${rate}` : ''}`;
     },
-  }
+  },
+  settings: {
+    debug: false,
+    riskFreeRate: 0.02,
+    marketBenchmark: '^SPX',
+  },
 };
