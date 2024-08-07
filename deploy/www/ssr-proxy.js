@@ -46,7 +46,7 @@ const ssrProxy = new SsrProxy({
             enabled: true,
             shouldUse: true,
             proxyOrder: ['SsrProxy', 'HttpProxy'],
-            initTimeoutMs: 3 * 60 * 1000, // 3m
+            initTimeoutMs: 3.5 * 60 * 1000, // 3.5m
             intervalCron: '0 0 3 * * *', // every day at 3am
             intervalTz: 'America/Sao_Paulo',
             retries: 3,

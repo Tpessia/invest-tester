@@ -24,8 +24,8 @@ export interface AlgoResultSummary {
   annualStdDev: number;
   maxDrawdown: number;
   sharpe: number;
-  alpha?: number;
-  beta?: number;
+  alpha?: Promise<number>;
+  beta?: Promise<number>;
 }
 
 export interface AlgoResultPerformance {

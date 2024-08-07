@@ -8,4 +8,4 @@ export * from './hooks/useStateImmutable';
 export * from './hooks/useThrottle';
 export * from './react';
 export * from './react-types';
-
+export * from './react-components';

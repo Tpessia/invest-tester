@@ -8,7 +8,7 @@ import { AssetTrade, AssetTradeSide } from '@/modules/algo-trading/models/AssetT
 import { AssetDataFlat } from '@/modules/asset-data/models/AssetData';
 import { AssetDataService } from '@/modules/asset-data/services/AssetDataService';
 import { Globals } from '@/modules/core/modles/Globals';
-import { addDate, annualizedStdDev, averageDatesPerYear, calculateAlpha, calculateBeta, calculateSharpeRatio, dateToIsoStr, getErrorMsg, mutableUpdate, normalizeTimezone, standardDeviation } from '@utils/index';
+import { addDate, annualizedStdDev, averageDatesPerYear, calculateAlpha, calculateBeta, calculateSharpeRatio, dateToIsoStr, getErrorMsg, mutableUpdate, normalizeTimezone, promiseDeferred, standardDeviation } from '@utils/index';
 import { Spec } from 'immutability-helper';
 import { cloneDeep, groupBy, maxBy, minBy, round, sortBy, uniqBy } from 'lodash-es';
 import { container, inject, injectable } from 'tsyringe';
@@ -446,9 +446,9 @@ class AlgoService {
     const risk = {
       annualStdDev: undefined as number | undefined,
       maxDrawdown: undefined as number | undefined,
-      alpha: undefined as number | undefined,
-      beta: undefined as number | undefined,
       sharpe: undefined as number | undefined,
+      alpha: undefined as Promise<number> | undefined,
+      beta: undefined as Promise<number> | undefined,
     };
 
     const portfolioReturns = performance.map(e => e.prevVariation);
@@ -461,7 +461,7 @@ class AlgoService {
     risk.sharpe = calculateSharpeRatio(annualVar, risk.annualStdDev, this.config?.riskFreeRate);
 
     if (this.config?.marketBenchmark) {
-      let benchmarkResult: AlgoResult | undefined;
+      let benchmarkResultAsync: Promise<AlgoResult | undefined> | undefined;
 
       if (!this.config?.isBenchmark) {
         const start = this.dateRange[0];
@@ -471,26 +471,42 @@ class AlgoService {
         const inputs: AlgoInputs = { ...this.state.inputs, assetCodes: [this.config.marketBenchmark], start, end, enableLeverage: false };
         const strategyProps: StrategyBuyHoldProps = { assets: [{ assetCode: this.config.marketBenchmark, percentual: 1 }], rebalance: true };
 
-        benchmarkResult = await algoService
-          .init({ isBenchmark: true }, s => {
-            if (s.status !== 'error') return;
-            const warnings = s.messages.warnings.map(e => getErrorMsg(e, false, '[Market Benchmark] '));
-            this.updateState({ messages: { warnings: { $push: warnings } }});
-          })
-          .start(inputs, strategyBuyHold(strategyProps));
+        const handleErrors = (...msgs: string[]) => {
+          this.updateState({ messages: { warnings: { $push: msgs.map(e => `[Market Benchmark] ${e}`) } }});
+        }
+
+        benchmarkResultAsync = algoService
+          .init({ isBenchmark: true }, s => s.status === 'error' && handleErrors(...s.messages.warnings))
+          .start(inputs, strategyBuyHold(strategyProps))
+          .catch(err => { handleErrors(getErrorMsg(err)); return undefined; });
       }
 
-      const portfolioDates = performance.map(e => dateToIsoStr(e.date));
-      const benchmarkDates = benchmarkResult?.performance.map(e => dateToIsoStr(e.date)) || [];
+      const riskPromises = { alpha: promiseDeferred<number>(), beta: promiseDeferred<number>() };
 
-      const portfolioReturnsFiltered = performance.slice(1, -1) // remove closePositions
-        .filter(e => benchmarkDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
-      const benchmarkReturns = benchmarkResult?.performance.slice(1, -1) // remove closePositions
-        .filter(e => portfolioDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
-      const benchmarkReturn = benchmarkResult?.summary.annualVar;
+      risk.alpha = riskPromises.alpha.promise;
+      risk.beta = riskPromises.beta.promise;
 
-      risk.beta = benchmarkReturns && calculateBeta(portfolioReturnsFiltered, benchmarkReturns);
-      risk.alpha = risk.beta && calculateAlpha(annualVar, risk.beta, this.config?.riskFreeRate, benchmarkReturn);
+      benchmarkResultAsync?.then(benchmarkResult => {
+        if (benchmarkResult == null) throw new Error('Market Benchmark not found');
+
+        const portfolioDates = performance.map(e => dateToIsoStr(e.date));
+        const benchmarkDates = benchmarkResult?.performance.map(e => dateToIsoStr(e.date)) || [];
+  
+        const portfolioReturnsFiltered = performance.slice(1, -1) // remove closePositions
+          .filter(e => benchmarkDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
+        const benchmarkReturns = benchmarkResult?.performance.slice(1, -1) // remove closePositions
+          .filter(e => portfolioDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
+        const benchmarkReturn = benchmarkResult?.summary.annualVar;
+  
+        const beta = benchmarkReturns && calculateBeta(portfolioReturnsFiltered, benchmarkReturns);
+        const alpha = beta && calculateAlpha(annualVar, beta, this.config?.riskFreeRate, benchmarkReturn);
+
+        riskPromises.alpha.resolve(alpha);
+        riskPromises.beta.resolve(beta);
+      }).catch(err => {
+        riskPromises.alpha.reject(err);
+        riskPromises.beta.reject(err);
+      });
     }
 
     // Summary

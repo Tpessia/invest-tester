@@ -1,3 +1,4 @@
+export * from './async/promise';
 export * from './data/array';
 export * from './data/date';
 export * from './data/dom';

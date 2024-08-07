@@ -6,7 +6,7 @@ import GlobalContext from '@/modules/core/context/GlobalContext';
 import LayoutContext from '@/modules/layout/context/LayoutContext';
 import variables from '@/styles/variables';
 import { DownloadOutlined, Loading3QuartersOutlined } from '@ant-design/icons';
-import { dateToIsoStr, downloadObj, toPercent, useFormatCurrency } from '@utils/index';
+import { AsyncComponent, dateToIsoStr, downloadObj, toPercent, useFormatCurrency } from '@utils/index';
 import { Input, Spin, Table, Tabs, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { keyBy, round } from 'lodash-es';
@@ -70,7 +70,10 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
               </div>)} />
             </div>
             <div>
-              {formatPercent(props.result.summary.alpha)}
+              {<AsyncComponent
+                data={props.result.summary.alpha} render={data => formatPercent(data)}
+                fallback='Loading' errorElement='N/A'
+              />}
             </div>
           </div>
           <div>
@@ -92,7 +95,10 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
               </div>)} />
             </div>
             <div>
-              {formatRound(props.result.summary.beta)}
+              {<AsyncComponent
+                data={props.result.summary.beta} render={data => formatRound(data)}
+                fallback='Loading' errorElement='N/A'
+              />}
             </div>
           </div>
           <div>
