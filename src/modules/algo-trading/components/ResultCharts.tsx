@@ -9,15 +9,19 @@ interface Props {
   chartType?: ChartProps['type'];
 }
 
+const pickEvenlyAmount = (amount: number, max: number = 150) => amount > max ? Math.min(max, amount * 0.2) : amount;
+
 const Performance: React.FC<Props> = (props) => {
   const formatCurrency = useFormatCurrency();
 
-  const data = pickEvenly(props.result?.portfolioHist.map(e => ({ x: e.date, y: e.total })) || [], 100);
+  const allData = props.result?.portfolioHist.map(e => ({ x: e.date, y: e.total })) || [];
+  const data = pickEvenly(allData, pickEvenlyAmount(allData.length, 100));
 
   return (
     <Chart
       data={[{ id: 'result', data }]}
       type={props.chartType}
+      minOffset={true}
       maxOffset={true}
       xFormarter={x => dateToIsoStr(x as Date)}
       yFormarter={y => formatCurrency(y as number)}
@@ -26,7 +30,8 @@ const Performance: React.FC<Props> = (props) => {
 };
 
 const Drawdown: React.FC<Props> = (props) => {
-  const data = pickEvenly(props.result?.performance.map(e => ({ x: e.date, y: toPercent(round(e.drawdown, 4)) })) || [], 100);
+  const allData = props.result?.performance.map(e => ({ x: e.date, y: toPercent(round(e.drawdown, 4)) })) || [];
+  const data = pickEvenly(allData, pickEvenlyAmount(allData.length, 250));
 
   return (
     <Chart
@@ -40,10 +45,10 @@ const Drawdown: React.FC<Props> = (props) => {
 const Positions: React.FC<Props> = (props) => {
   const formatCurrency = useFormatCurrency();
 
-  const data = Object.entries(props.result?.assetHist ?? {}).map(hist => ({
-    id: hist[0],
-    data: pickEvenly(hist[1].map(a => ({ x: a.date, y: round(a.quantity * a.value, 2) })), 100),
-  }));
+  const data = Object.entries(props.result?.assetHist ?? {}).map((hist, i, arr) => {
+    const allData = hist[1].map(a => ({ x: a.date, y: round(a.quantity * a.value, 2) }));
+    return { id: hist[0], data: pickEvenly(allData, pickEvenlyAmount(allData.length * arr.length) / arr.length) };
+  });
   data.forEach(e => { e.data.splice(0, 1); e.data.splice(-1, 1); }); // remove closePositions
 
   return (
@@ -60,10 +65,10 @@ const Positions: React.FC<Props> = (props) => {
 };
 
 const Quantities: React.FC<Props> = (props) => {
-  const data = Object.entries(props.result?.assetHist ?? {}).map(hist => ({
-    id: hist[0],
-    data: pickEvenly(hist[1].map(a => ({ x: a.date, y: a.quantity })), 100),
-  }));
+  const data = Object.entries(props.result?.assetHist ?? {}).map((hist, i, arr) => {
+    const allData = hist[1].map(a => ({ x: a.date, y: a.quantity }));
+    return { id: hist[0], data: pickEvenly(allData, pickEvenlyAmount(allData.length * arr.length) / arr.length) };
+  });
   data.forEach(e => { e.data.splice(0, 1); e.data.splice(-1, 1); }); // remove closePositions
 
   return (
@@ -81,10 +86,10 @@ const Quantities: React.FC<Props> = (props) => {
 const Prices: React.FC<Props> = (props) => {
   const formatCurrency = useFormatCurrency();
 
-  const data = Object.entries(props.result?.assetHist ?? {}).map(hist => ({
-    id: hist[0],
-    data: pickEvenly(hist[1].map(a => ({ x: a.date, y: round(a.value, 2) })), 100),
-  }));
+  const data = Object.entries(props.result?.assetHist ?? {}).map((hist, i, arr) => {
+    const allData = hist[1].map(a => ({ x: a.date, y: round(a.value, 2) }));
+    return { id: hist[0], data: pickEvenly(allData, pickEvenlyAmount(allData.length * arr.length) / arr.length) };
+  });
   data.forEach(e => { e.data.splice(0, 1); e.data.splice(-1, 1); }); // remove closePositions
 
   return (

@@ -1,7 +1,7 @@
 import { AlgoFunction } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoWorkspace } from '@/modules/algo-trading/models/AlgoWorkspace';
 import { Globals } from '@/modules/core/modles/Globals';
-import { formatCurrency } from '@utils/index';
+import { formatCurrency, getEndOfDay, getStartOfDay } from '@utils/index';
 import { sum } from 'lodash-es';
 
 export const initialCode =
@@ -77,9 +77,6 @@ start();
 
 export interface StrategyBuyHoldProps {
   assets: { assetCode: string, percentual: number }[];
-  initCash: number;
-  start: Date;
-  end: Date;
   monthlyDeposits?: number;
   rebalance?: boolean;
   download?: boolean;
@@ -115,7 +112,7 @@ export function strategyBuyHold(props: StrategyBuyHoldProps): AlgoFunction {
       let targetAssetValues = props.assets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * val.percentual }), {} as Record<string, any>);
 
       if (props.rebalance) {
-        const activeAssets = props.assets.filter(e => this.date >= this.state.assetDates[e.assetCode].start && this.state.assetDates[e.assetCode].end >= this.date);
+        const activeAssets = props.assets.filter(e => getEndOfDay(this.date) >= this.state.assetDates[e.assetCode].start && getStartOfDay(this.date) <= this.state.assetDates[e.assetCode].end);
         const activePercent = sum(activeAssets.map(e => e.percentual));
         targetAssetValues = activeAssets.reduce((acc, val) => ({ ...acc, [val.assetCode]: totalValue * (val.percentual + (1 - activePercent) * (val.percentual / activePercent)) }), {} as Record<string, number>);
       }

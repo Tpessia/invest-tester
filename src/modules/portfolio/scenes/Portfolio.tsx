@@ -1,5 +1,3 @@
-import { decodeUrlObj, encodeUrlObj, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson } from '@utils/index';
-import { useFormatCurrency, useService, useStateImmutable, useThrottle } from '@utils/index';
 import ResultsBox from '@/modules/algo-trading/components/ResultsBox';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
 import { AlgoConfig, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
@@ -14,6 +12,7 @@ import InputAddon from '@core/components/InputAddon';
 import InputMask from '@core/components/InputMask';
 import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
+import { decodeUrlObj, encodeUrlObj, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson, useService, useStateImmutable, useThrottle } from '@utils/index';
 import { Button, Checkbox, Col, notification, Row, Space } from 'antd';
 import dayjs from 'dayjs';
 import { round, uniqBy } from 'lodash-es';
@@ -23,7 +22,11 @@ import { useLocation } from 'react-router-dom';
 import './Portfolio.scss';
 
 interface State {
-  inputs: StrategyBuyHoldProps;
+  inputs: StrategyBuyHoldProps & {
+    initCash: number;
+    start: Date;
+    end: Date;
+  };
   status: AlgoStatus;
   messages: AlgoMessages;
   progress: number;
@@ -32,11 +35,11 @@ interface State {
 
 const initState = (urlMode: UrlMode): State => ({
   inputs: tryParseJson(localStorage.getItem(Globals.cache.portfolioInputs), jsonDateReviver) || {
-    assets: (Globals.inputs.assets[urlMode || Globals.inputs.mode]).map((a, i, arr) => ({ assetCode: a, percentual: i === arr.length - 1 ? 1 - (arr.length - 1) * +(1 / arr.length).toFixed(2) : +(1 / arr.length).toFixed(2) })),
     initCash: 1000000,
-    monthlyDeposits: 0,
     start: Globals.inputs.start,
     end: Globals.inputs.end,
+    assets: (Globals.inputs.assets[urlMode || Globals.inputs.mode]).map((a, i, arr) => ({ assetCode: a, percentual: i === arr.length - 1 ? 1 - (arr.length - 1) * +(1 / arr.length).toFixed(2) : +(1 / arr.length).toFixed(2) })),
+    monthlyDeposits: 0,
     rebalance: false,
     download: false,
   },
@@ -52,7 +55,6 @@ const Portfolio: React.FC = () => {
   
   const location = useLocation();
   const globalContext = useContext(GlobalContext);
-  const formatCurrency = useFormatCurrency();
 
   const [nApi, nContext] = notification.useNotification();
 

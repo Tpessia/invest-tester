@@ -4,6 +4,7 @@ import { AlgoMessages, AlgoStatus } from '@/modules/algo-trading/models/AlgoStat
 import InfoPopover from '@/modules/core/components/InfoPopover';
 import GlobalContext from '@/modules/core/context/GlobalContext';
 import LayoutContext from '@/modules/layout/context/LayoutContext';
+import variables from '@/styles/variables';
 import { DownloadOutlined, Loading3QuartersOutlined } from '@ant-design/icons';
 import { dateToIsoStr, downloadObj, toPercent, useFormatCurrency } from '@utils/index';
 import { Input, Spin, Table, Tabs, Typography } from 'antd';
@@ -33,44 +34,66 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
     component: () => {
       if (props.result == null) return <></>;
 
+      const formatRound = (v: number | undefined) => v != null ? round(v, 4) : 'N/A';
+      const formatPercent = (v: number | undefined) => v != null ? `${toPercent(round(v, 4))}%` : 'N/A';
       const formatVar = (v: number) => (<Typography.Text type={v >= 0 ? 'success' : 'danger'}>{v > 0 ? '+' : ''}{toPercent(v)}%</Typography.Text>);
-      const formatRisk = (v: number | undefined) => v != null ? round(v, 2) : 'N/A';
 
       return (
         <div className='algo-summary'>
           <div>
-            <div>Final</div>
-            <div>{formatCurrency(props.result.summary.finalCash)}</div>
+            <div>Init</div>
+            <div>{formatCurrency(props.result.summary.initCash)}</div>
           </div>
           <div>
             <div>Var</div>
             <div>{formatVar(props.result.summary.totalVar)}</div>
           </div>
           <div>
-            <div><InfoPopover content='Alpha (α)' popover={(<div>
-              Excess return relative to benchmark, adjusted for risk<br/>
-              Positive α: Outperformed benchmark<br/>
-              Negative α: Underperformed benchmark<br/>
-              Zero α: Matched benchmark
-            </div>)} /></div>
-            <div>{formatRisk(props.result.summary.alpha)}</div>
+            <div>Max Drawdown</div>
+            <div>{formatPercent(props.result.summary.maxDrawdown)}</div>
           </div>
           <div>
-            <div>Lowest</div>
-            <div>{formatCurrency(props.result.summary.low)}</div>
+            <div>Final</div>
+            <div>{formatCurrency(props.result.summary.finalCash)}</div>
           </div>
           <div>
             <div>Annual Var</div>
             <div>{formatVar(props.result.summary.annualVar)}</div>
           </div>
           <div>
-            <div><InfoPopover content='Beta (β)' popover={(<div>
-              Measures portfolio volatility relative to the market<br/>
-              β = 1: Moves perfectly with the market<br/>
-              β {'>'} 1: More volatile<br/>
-              β {'<'} 1: Less volatile
-            </div>)} /></div>
-            <div>{formatRisk(props.result.summary.beta)}</div>
+            <div>
+              <InfoPopover content='Alpha (α)' popover={(<div>
+                Excess return relative to benchmark, adjusted for risk<br/>
+                Positive α: Outperformed benchmark<br/>
+                Negative α: Underperformed benchmark<br/>
+                Zero α: Matched benchmark
+              </div>)} />
+            </div>
+            <div>
+              {formatPercent(props.result.summary.alpha)}
+            </div>
+          </div>
+          <div>
+            <div>Lowest</div>
+            <div>{formatCurrency(props.result.summary.low)}</div>
+          </div>
+          <div>
+            <div>Volatility</div>
+            <div>{formatPercent(props.result.summary.annualStdDev)}</div>
+          </div>
+          <div>
+            <div>
+              <InfoPopover content='Beta (β)' popover={(<div>
+                Measures portfolio volatility relative to the benchmark<br/>
+                β = 1: Moves perfectly with the benchmark<br/>
+                β {'>'} 1: More volatile {'('}e.g. 1.5 = 50% more volatile{')'}<br/>
+                β {'>'} 0 and {'<'} 1: Less volatile {'('}e.g. 0.5 = 50% lest volatile{')'}<br/>
+                β {'<'} 0: Inverse correlation {'('}e.g. -1 = 1:1 oposite direction{')'}
+              </div>)} />
+            </div>
+            <div>
+              {formatRound(props.result.summary.beta)}
+            </div>
           </div>
           <div>
             <div>Highest</div>
@@ -81,11 +104,13 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
             <div>{props.result.summary.nTrades}</div>
           </div>
           <div>
-            <div><InfoPopover content='Sharpe Ratio' popover={(<div>
+            <div><InfoPopover content='Sharpe' popover={(<div>
               Measures risk-adjusted performance<br/>
-              Higher ratio indicates better risk-adjusted returns
+              Sharpe {'<'} 0: Low risk-adjusted performance<br/>
+              Sharpe {'>'} 0: Good risk-adjusted performance<br/>
+              Sharpe {'>'} 1: Great risk-adjusted performance
             </div>)} /></div>
-            <div>{formatRisk(props.result.summary.sharpe)}</div>
+            <div>{formatRound(props.result.summary.sharpe)}</div>
           </div>
         </div>
       );
@@ -148,6 +173,9 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
         },
       ];
 
+      let pageSize = layoutContext.isMobile ? 6 : (((layoutContext.screenHeight - 168) / 2) - 128) / 33;
+      if (pageSize < 6) pageSize = 6;
+
       return (
         <div className='algo-timeseries'>
           <DownloadOutlined className='timeseries-download'
@@ -155,7 +183,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
           <Table
             dataSource={dataSource}
             columns={columns} size='small'
-            pagination={{ simple: true, pageSize: 6, showSizeChanger: false }}
+            pagination={{ simple: true, pageSize, showSizeChanger: false }}
           />
         </div>
       );
@@ -182,7 +210,7 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
         <>
           <Tabs
             className='tabs'
-            activeKey={activeTab} items={tabs} centered={!layoutContext.isMobile}
+            activeKey={activeTab} items={tabs} centered={layoutContext.screenWidth > variables.sizeLg}
             onChange={t => setActiveTab(t as TabKey)}
           />
           {['summary','timeseries'].includes(activeTab) ? (

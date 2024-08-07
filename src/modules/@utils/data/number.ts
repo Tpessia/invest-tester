@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import { uniqBy } from 'lodash-es';
 import { NumericFormatProps, numericFormatter } from 'react-number-format';
 
 // Fix Floating-point arithmetic (https://0.30000000000000004.com/)
@@ -39,9 +40,6 @@ export function findBestLogBase(values: number[], round: boolean = true) {
   const min = Math.min(...values.filter(v => v > 0));
   const max = Math.max(...values);
 
-  // Default to natural log if all values are the same
-  if (min === max) return Math.E;
-
   const bases = [2, Math.E, 10];
   let bestBase = 2;
   let bestSpread = 0;
@@ -68,8 +66,9 @@ export function generateLogScale(minValue: number, maxValue: number, base: numbe
   const start = Math.floor(Math.log(minValue) / Math.log(base));
   const end = Math.ceil(Math.log(maxValue) / Math.log(base));
   const range = end - start;
-  return Array.from({length: steps}, (_, i) => {
+  const scale = Array.from({length: steps}, (_, i) => {
     const exp = start + (i * range / (steps - 1));
     return Math.pow(base, Math.round(exp));
   });
+  return uniqBy(scale, v => v);
 }

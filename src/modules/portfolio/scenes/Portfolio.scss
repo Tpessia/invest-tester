@@ -10,6 +10,8 @@
     }
 
     .portfolio-inputs {
+        overflow: hidden;
+
         @media (min-width: $size-md) {
             max-height: calc(100vh - 64px - 64px - 1.5rem);
             overflow-y: auto;

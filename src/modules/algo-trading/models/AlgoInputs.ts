@@ -13,6 +13,7 @@ export interface AlgoInputs {
 
 export interface AlgoConfig {
   algoStr?: string;
+  isBenchmark?: boolean;
   riskFreeRate?: number;
   marketBenchmark?: string;
 }

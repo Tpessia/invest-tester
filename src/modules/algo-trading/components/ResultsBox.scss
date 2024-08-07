@@ -8,7 +8,7 @@
   .ant-tabs-nav-list {
     margin-left: 13px;
 
-    @media (min-width: $size-md) {
+    @media (min-width: $size-lg) {
       margin-left: 0;
     }
 
@@ -16,7 +16,7 @@
       &:nth-last-child(2) {
         margin-right: 25px;
   
-        @media (min-width: $size-md) {
+        @media (min-width: $size-lg) {
           margin-right: 0;
         }
       }
@@ -29,8 +29,9 @@
   position: relative;
   border: 5px solid $body-secundary !important;
   height: 340px !important;
-
+  
   @media (min-width: $size-md) {
+    min-height: 325px !important;
     height: 100% !important;
   }
 
@@ -60,15 +61,16 @@
   }
 
   .algo-summary {
+    overflow-x: auto;
     display: grid;
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
     grid-template-columns: repeat(3, 1fr);
 
     flex: 1;
     margin-top: 45px;
-    padding: 1.5% 2%;
-    font-size: .95rem;
-    line-height: 1.4;
+    padding: 1.5% 1.5%;
+    font-size: .9rem;
+    line-height: 1.3;
 
     @media (min-width: $size-md) {
       padding: 1.5% 5%;
@@ -79,9 +81,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      line-height: 1.5;
-      font-size: .95rem;
-      padding: 0 2px;
+      padding: 0 5px;
+      white-space: nowrap;
 
       &>div:first-child {
         font-weight: bold;

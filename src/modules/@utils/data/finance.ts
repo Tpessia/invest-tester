@@ -1,3 +1,5 @@
+import { sum } from 'lodash-es';
+
 // Measures excess return relative to the benchmark, adjusted for risk
 export function calculateAlpha(portfolioReturn: number, beta: number, riskFreeRate: number = 0.02, marketReturn: number = 0.08): number {
   return portfolioReturn - (riskFreeRate + beta * (marketReturn - riskFreeRate));
@@ -88,6 +90,7 @@ export function calculateUpsideDownsideCapture(portfolioReturns: number[], bench
 }
 
 export function covariance(x: number[], y: number[]): number {
+  if (x.length !== y.length) throw new Error('Covariance arrays must be of equal length');
   const xMean = x.reduce((sum, val) => sum + val, 0) / x.length;
   const yMean = y.reduce((sum, val) => sum + val, 0) / y.length;
   return x.reduce((sum, xi, i) => sum + (xi - xMean) * (y[i] - yMean), 0) / (x.length - 1);
@@ -101,4 +104,22 @@ export function variance(x: number[]): number {
 // Measures the total risk or volatility of returns
 export function standardDeviation(x: number[]): number {
   return Math.sqrt(variance(x));
+}
+
+export function annualizedStdDev(stdDev: number, dayBase: number = 252): number {
+  return stdDev * Math.sqrt(dayBase);
+}
+
+export function groupReturns(returns: number[], groupBy: number = 252): number[] {
+  const groupedReturns: number[] = [];
+  for (let i = 0; i < returns.length; i += groupBy) {
+    const group = returns.slice(i, i + groupBy);
+    groupedReturns.push(sum(group) / group.length);
+  }
+  return groupedReturns;
+}
+
+export function annualizeReturns(dailyReturns: number[], dayBase: number = 252): number {
+  const meanDailyReturn = sum(dailyReturns) / dailyReturns.length;
+  return Math.pow(1 + meanDailyReturn, dayBase) - 1;
 }

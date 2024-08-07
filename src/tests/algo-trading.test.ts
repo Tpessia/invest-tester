@@ -51,6 +51,7 @@ test('trade-buy-sell', async () => {
     initMargin: 0.5,
     minMargin: 0.3,
   }, testCodeBuySell);
+  console.log('result', result?.portfolioHist, result?.tradeHist);
   const cash = result?.portfolioHist[result.portfolioHist.length - 1].cash;
 
   expect(cash).toBe(3004);

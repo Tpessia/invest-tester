@@ -78,7 +78,7 @@ const SettingsModal: React.FC = ()  => {
       </div>
       <div className='item'>
         <span className='label'>Market Benchmark</span>
-        <span style={{ width: '80px' }}>
+        <span style={{ width: '100px' }}>
           <TickersSelector.Single
             ticker={globalContext.settings.marketBenchmark}
             onChange={e => setSettings({ marketBenchmark: e })}

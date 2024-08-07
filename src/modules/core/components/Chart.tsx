@@ -1,6 +1,6 @@
 import variables from '@/styles/variables';
 import { Theme } from '@nivo/core';
-import { DatumValue, Point, PointTooltip, ResponsiveLine, Serie } from '@nivo/line';
+import { DatumValue, Point, PointTooltip, ResponsiveLine, Serie, SliceTooltip } from '@nivo/line';
 import { findBestLogBase, formatCurrency, generateLogScale, pickEvenly } from '@utils/index';
 import Color from 'color';
 import { sortBy } from 'lodash-es';
@@ -35,8 +35,8 @@ const Chart: React.FC<ChartProps> = (props) => {
 
   let logBase: number | undefined;
   if (props.type === 'log') {
-    logBase = findBestLogBase(flatY);
-    chartLegendsY = generateLogScale(minYRaw, maxYRaw, logBase);
+    logBase = findBestLogBase(flatY, true);
+    chartLegendsY = generateLogScale(minYRaw, maxYRaw, logBase, 10);
   }
 
   // Values
@@ -61,6 +61,18 @@ const Chart: React.FC<ChartProps> = (props) => {
       y: <b>{props.yFormarter?.(point.data.y) ?? point.data.y.toString()}</b>
     </div>
   );
+
+  // const tooltip: SliceTooltip = ({ slice }) => (
+  //   <div style={{ marginBottom: '10px' }}>
+  //     {slice.points.map((point, i) => (
+  //       <div key={i} style={{ background: variables.bodySecundary, padding: 5, marginBottom: -5 }}>
+  //         {props.labelPrefix?.(point)}
+  //         x: <b>{props.xFormarter?.(point.data.x) ?? point.data.x.toString()}</b>,
+  //         y: <b>{props.yFormarter?.(point.data.y) ?? point.data.y.toString()}</b>
+  //       </div>
+  //     ))}
+  //   </div>
+  // );
 
   // Callbacks
 
@@ -92,9 +104,11 @@ const Chart: React.FC<ChartProps> = (props) => {
         enableGridX={false}
         enableGridY={false}
         enableTouchCrosshair={false}
-        useMesh={true}
         animate={false}
+        useMesh={true}
         tooltip={tooltip}
+        // enableSlices='x'
+        // sliceTooltip={tooltip}
         pointColor={{ theme: 'background' }}
         lineWidth={2.5}
         legends={props.data.length > 1 ? [{

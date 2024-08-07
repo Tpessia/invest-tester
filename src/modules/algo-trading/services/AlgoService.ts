@@ -1,19 +1,20 @@
 import { AlgoConfig, AlgoFunction, AlgoInputs } from '@/modules/algo-trading/models/AlgoInputs';
 import { AlgoResult, AlgoResultPerformance, AlgoResultSummary } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoState, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
+import { strategyBuyHold, StrategyBuyHoldProps } from '@/modules/algo-trading/models/AlgoStrategies';
 import { AlgoWorkspace } from '@/modules/algo-trading/models/AlgoWorkspace';
 import { AssetPortfolio } from '@/modules/algo-trading/models/AssetPortfolio';
 import { AssetTrade, AssetTradeSide } from '@/modules/algo-trading/models/AssetTrade';
 import { AssetDataFlat } from '@/modules/asset-data/models/AssetData';
 import { AssetDataService } from '@/modules/asset-data/services/AssetDataService';
 import { Globals } from '@/modules/core/modles/Globals';
-import { addDate, averageDatesPerYear, calculateAlpha, calculateBeta, calculateSharpeRatio, dateToIsoStr, getErrorMsg, mutableUpdate, normalizeTimezone, standardDeviation } from '@utils/index';
+import { addDate, annualizedStdDev, averageDatesPerYear, calculateAlpha, calculateBeta, calculateSharpeRatio, dateToIsoStr, getErrorMsg, mutableUpdate, normalizeTimezone, standardDeviation } from '@utils/index';
 import { Spec } from 'immutability-helper';
 import { cloneDeep, groupBy, maxBy, minBy, round, sortBy, uniqBy } from 'lodash-es';
-import { inject, injectable } from 'tsyringe';
+import { container, inject, injectable } from 'tsyringe';
 
 @injectable()
-export class AlgoService {
+class AlgoService {
   config?: AlgoConfig;
 
   state!: AlgoState;
@@ -161,9 +162,7 @@ export class AlgoService {
 
         const progress = this.workspace.index / this.workspace.length;
 
-        this.updateState({
-          progress: { $set: progress },
-        });
+        this.updateState({ progress: { $set: progress } });
 
         await emitEvent('data');
 
@@ -204,7 +203,7 @@ export class AlgoService {
 
       if (this.state.status === 'error') return;
 
-      this.result = this.calcResult();
+      this.result = await this.calcResult();
 
       if ('end' in this.workspaceListeners) {
         this.workspace.messages = [];
@@ -367,7 +366,7 @@ export class AlgoService {
     };
   }
 
-  private calcResult(): AlgoResult {
+  private async calcResult(): Promise<AlgoResult> {
     const realTotal = (portfolio: AssetPortfolio) => portfolio.total - portfolio.injectedCash;
 
     const performance: AlgoResultPerformance[] = [];
@@ -426,7 +425,7 @@ export class AlgoService {
       });
     }
 
-    // Summary
+    // Metrics
 
     const initCash = portfolioHist[0].baseCash;
     const finalCash = portfolio.cash;
@@ -442,14 +441,59 @@ export class AlgoService {
 
     const nTrades = Object.values(this.state.tradeHist).flatMap(e => e).filter(t => t.status === 'filled').length;
 
-    const dailyVar = Math.pow(1 + annualVar, 1 / avgDaysPerYear) - 1;
-    const dailyRiskFreeRate = this.config?.riskFreeRate && Math.pow(1 + this.config?.riskFreeRate, 1 / avgDaysPerYear) - 1;
-    const marketReturns = performance.map(e => e.prevVariation); // TODO: algoService.start(this.config?.marketBenchmark).performance.map(e => e.prevVariation), prevent recursion, ensure stateless
-    const marketReturn = undefined; // TODO: algoService.start(this.config?.marketBenchmark).annualVar
-    const stdDev = standardDeviation(performance.map(e => e.prevVariation)); // TODO: which time scale? (days, months, years)
-    const beta = calculateBeta(performance.map(e => e.prevVariation), marketReturns);
-    const alpha = calculateAlpha(annualVar, beta, this.config?.riskFreeRate, marketReturn);
-    const sharpe = calculateSharpeRatio(dailyVar, stdDev, dailyRiskFreeRate);
+    // Risk
+
+    const risk = {
+      annualStdDev: undefined as number | undefined,
+      maxDrawdown: undefined as number | undefined,
+      alpha: undefined as number | undefined,
+      beta: undefined as number | undefined,
+      sharpe: undefined as number | undefined,
+    };
+
+    const portfolioReturns = performance.map(e => e.prevVariation);
+
+    const stdDev = standardDeviation(portfolioReturns);
+    risk.annualStdDev = annualizedStdDev(stdDev, avgDaysPerYear);
+
+    risk.maxDrawdown = Math.min(...performance.map(e => e.drawdown));
+
+    risk.sharpe = calculateSharpeRatio(annualVar, risk.annualStdDev, this.config?.riskFreeRate);
+
+    if (this.config?.marketBenchmark) {
+      let benchmarkResult: AlgoResult | undefined;
+
+      if (!this.config?.isBenchmark) {
+        const start = this.dateRange[0];
+        const end = this.dateRange[this.dateRange.length - 1];
+
+        const algoService = container.resolve(AlgoService);
+        const inputs: AlgoInputs = { ...this.state.inputs, assetCodes: [this.config.marketBenchmark], start, end, enableLeverage: false };
+        const strategyProps: StrategyBuyHoldProps = { assets: [{ assetCode: this.config.marketBenchmark, percentual: 1 }], rebalance: true };
+
+        benchmarkResult = await algoService
+          .init({ isBenchmark: true }, s => {
+            if (s.status !== 'error') return;
+            const warnings = s.messages.warnings.map(e => getErrorMsg(e, false, '[Market Benchmark] '));
+            this.updateState({ messages: { warnings: { $push: warnings } }});
+          })
+          .start(inputs, strategyBuyHold(strategyProps));
+      }
+
+      const portfolioDates = performance.map(e => dateToIsoStr(e.date));
+      const benchmarkDates = benchmarkResult?.performance.map(e => dateToIsoStr(e.date)) || [];
+
+      const portfolioReturnsFiltered = performance.slice(1, -1) // remove closePositions
+        .filter(e => benchmarkDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
+      const benchmarkReturns = benchmarkResult?.performance.slice(1, -1) // remove closePositions
+        .filter(e => portfolioDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
+      const benchmarkReturn = benchmarkResult?.summary.annualVar;
+
+      risk.beta = benchmarkReturns && calculateBeta(portfolioReturnsFiltered, benchmarkReturns);
+      risk.alpha = risk.beta && calculateAlpha(annualVar, risk.beta, this.config?.riskFreeRate, benchmarkReturn);
+    }
+
+    // Summary
 
     const summary: AlgoResultSummary = {
       initCash,
@@ -459,9 +503,11 @@ export class AlgoService {
       high,
       low,
       nTrades,
-      alpha,
-      beta,
-      sharpe,
+      annualStdDev: risk.annualStdDev,
+      maxDrawdown: risk.maxDrawdown,
+      sharpe: risk.sharpe,
+      alpha: risk.alpha,
+      beta: risk.beta,
     };
 
     const assetHist = groupBy(
@@ -547,3 +593,5 @@ export class AlgoService {
     throw new Error(`Asset value not found for the given date range (${date}:${assetCode})`);
   }
 }
+
+export { AlgoService };
