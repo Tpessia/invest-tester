@@ -22,7 +22,7 @@ class AlgoService {
   workspaceListeners: Record<string, Function[]> = {};
 
   dateRange: Date[] = [];
-  assetTimeSeries: Record<string, AssetDataFlat[]>= {};
+  assetTimeSeries: Record<string, AssetDataFlat[]> = {};
 
   result?: AlgoResult;
 
@@ -54,8 +54,15 @@ class AlgoService {
     const assetCodes = inputs.assetCodes.toString();
     this.assetTimeSeries = await this.assetDataService.getFlat(assetCodes, inputs.start, inputs.end);
 
-    if (!Object.values(this.assetTimeSeries).length)
+    const timeSeriesEntries = Object.entries(this.assetTimeSeries);
+    const timeSeriesCodes = new Set(timeSeriesEntries.flatMap(e => e[1].map(f => f.assetCode)));
+
+    if (!timeSeriesEntries[1].length)
       throw new Error(`No asset data found: ${assetCodes}`);
+
+    const missingAssets = inputs.assetCodes.filter(c => !timeSeriesCodes.has(c));
+    if (missingAssets.length)
+      throw new Error(`Missing asset data: ${missingAssets.join(', ')}`);
 
     // Check Dates
 
@@ -157,7 +164,7 @@ class AlgoService {
           date,
           assets,
           portfolio: this.state.portfolio,
-          index: +i+1,
+          index: +i + 1,
         });
 
         const progress = this.workspace.index / this.workspace.length;
@@ -377,7 +384,7 @@ class AlgoService {
     // Performance
 
     const init = portfolioHist[0];
-    const initValue = realTotal(init);
+    const initValue = realTotal(init) || 1; // TODO: improve zero values handling
 
     let topMax = initValue;
 
@@ -390,8 +397,8 @@ class AlgoService {
 
       // Hist Variation
 
-      const prevValue = realTotal(prev);
-      const currentValue = realTotal(current);
+      const prevValue = realTotal(prev) || 1; // TODO: improve zero values handling
+      const currentValue = realTotal(current) || 1; // TODO: improve zero values handling
 
       const prevVariation = i > 0 ? (currentValue - prevValue) / prevValue : 0;
       const initVariation = (currentValue - initValue) / initValue;
@@ -415,7 +422,7 @@ class AlgoService {
 
       // const ytdVariation = (currentValue - ytdValue) / ytdValue;
       // const last12Variation = (currentValue - last12Value) / last12Value;
-      
+
       performance.push({
         date: current.date,
         value: currentValue,
@@ -461,6 +468,10 @@ class AlgoService {
     risk.sharpe = calculateSharpeRatio(annualVar, risk.annualStdDev, this.config?.riskFreeRate);
 
     if (this.config?.marketBenchmark) {
+      const handleErrors = (...msgs: string[]) => {
+        this.updateState({ messages: { warnings: { $push: msgs.map(e => `[Market Benchmark] ${e}`) } } });
+      }
+
       let benchmarkResultAsync: Promise<AlgoResult | undefined> | undefined;
 
       if (!this.config?.isBenchmark) {
@@ -469,16 +480,12 @@ class AlgoService {
 
         const algoService = container.resolve(AlgoService);
         const inputs: AlgoInputs = { ...this.state.inputs, assetCodes: [this.config.marketBenchmark], start, end, enableLeverage: false };
-        const strategyProps: StrategyBuyHoldProps = { assets: [{ assetCode: this.config.marketBenchmark, percentual: 1 }], rebalance: true };
-
-        const handleErrors = (...msgs: string[]) => {
-          this.updateState({ messages: { warnings: { $push: msgs.map(e => `[Market Benchmark] ${e}`) } }});
-        }
+        const strategyProps: StrategyBuyHoldProps = { assets: [{ assetCode: this.config.marketBenchmark, percentual: 1 }], rebalance: true }; // TODO: monthlyDeposits
 
         benchmarkResultAsync = algoService
           .init({ isBenchmark: true }, s => s.status === 'error' && handleErrors(...s.messages.warnings))
           .start(inputs, strategyBuyHold(strategyProps))
-          .catch(err => { handleErrors(getErrorMsg(err)); return undefined; });
+          .catch(err => { handleErrors(getErrorMsg(err, this.config?.debug)); return undefined; });
       }
 
       const riskPromises = { alpha: promiseDeferred<number>(), beta: promiseDeferred<number>() };
@@ -491,19 +498,22 @@ class AlgoService {
 
         const portfolioDates = performance.map(e => dateToIsoStr(e.date));
         const benchmarkDates = benchmarkResult?.performance.map(e => dateToIsoStr(e.date)) || [];
-  
+
         const portfolioReturnsFiltered = performance.slice(1, -1) // remove closePositions
           .filter(e => benchmarkDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
         const benchmarkReturns = benchmarkResult?.performance.slice(1, -1) // remove closePositions
           .filter(e => portfolioDates.includes(dateToIsoStr(e.date))).map(e => e.prevVariation);
         const benchmarkReturn = benchmarkResult?.summary.annualVar;
-  
+
         const beta = benchmarkReturns && calculateBeta(portfolioReturnsFiltered, benchmarkReturns);
         const alpha = beta && calculateAlpha(annualVar, beta, this.config?.riskFreeRate, benchmarkReturn);
+
+        if (isNaN(alpha) || isNaN(beta)) throw new Error(`Invalid alpha (${alpha}) or beta (${beta})`);
 
         riskPromises.alpha.resolve(alpha);
         riskPromises.beta.resolve(beta);
       }).catch(err => {
+        handleErrors(getErrorMsg(err, this.config?.debug));
         riskPromises.alpha.reject(err);
         riskPromises.beta.reject(err);
       });
@@ -528,7 +538,7 @@ class AlgoService {
 
     const assetHist = groupBy(
       uniqBy(portfolioHist.flatMap(e => Object.values(e.assets).map(f => ({ ...f, date: e.date }))).filter(e => !!e.value), e => `${e.assetCode}-${e.date}`)
-    , e => e.assetCode);
+      , e => e.assetCode);
 
     return {
       inputs: this.state.inputs,
@@ -567,8 +577,7 @@ class AlgoService {
   }
 
   private haltSimulation(msg: string | Error) {
-    console.error(msg);
-    this.updateState({ status: { $set: 'error' }, messages: { warnings: { $push: [`[Halting] ${getErrorMsg(msg)}`] } } });
+    this.updateState({ status: { $set: 'error' }, messages: { warnings: { $push: [`[Halting] ${getErrorMsg(msg, this.config?.debug)}`] } } });
   }
 
   private validateCode(code: string) {
@@ -583,6 +592,7 @@ class AlgoService {
   public getFirstAsset(assetCode?: string) {
     const assets = Object.values(this.assetTimeSeries).filter(e => assetCode == null || e.some(f => f.assetCode === assetCode));
     const firsts = assets[0];
+    if (!firsts) throw new Error(`First asset not found for ${assetCode}`);
     const first = assetCode != null ? firsts.find(e => e.assetCode === assetCode) : minBy(firsts, e => e.date.getTime());
     return first;
   }
@@ -590,6 +600,7 @@ class AlgoService {
   public getLastAsset(assetCode?: string) {
     const assets = Object.values(this.assetTimeSeries).filter(e => assetCode == null || e.some(f => f.assetCode === assetCode));
     const lasts = assets[assets.length - 1];
+    if (!lasts) throw new Error(`Last asset not found for ${assetCode}`);
     const last = assetCode != null ? lasts.find(e => e.assetCode === assetCode) : maxBy(lasts, e => e.date.getTime());
     return last;
   }

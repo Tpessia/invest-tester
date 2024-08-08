@@ -1,16 +1,20 @@
-import { fromPercent, loadScript, toPercent } from '@utils/index';
 import TickersSelector from '@/modules/algo-trading/components/TickersSelector';
 import { ChartProps } from '@/modules/core/components/Chart';
 import InputMask from '@/modules/core/components/InputMask';
 import GlobalContext from '@/modules/core/context/GlobalContext';
 import { Globals } from '@/modules/core/modles/Globals';
 import variables from '@/styles/variables';
+import { fromPercent, loadScript, toPercent, waitFor } from '@utils/index';
 import { Button, Modal, Select, Switch } from 'antd';
 import { useContext } from 'react';
 import './SettingsModal.scss';
 
 const SettingsModal: React.FC = ()  => {
+  // State
+
   const globalContext = useContext(GlobalContext);
+
+  // Callbacks
 
   const setSettings = (settings: Partial<typeof Globals.settings>) => {
     const newSettings = { ...globalContext.settings, ...settings };
@@ -26,24 +30,7 @@ const SettingsModal: React.FC = ()  => {
     }
   };
 
-  const handleDebug = async (on: boolean) => {
-    setSettings({ debug: on });
-
-    const oldScripts = document.querySelectorAll('.eruda-script');
-    oldScripts.forEach(script => script?.remove());
-
-    const eruda = () => (window as any)?.eruda;
-
-    if (on) {
-      await loadScript('https://cdn.jsdelivr.net/npm/eruda@3.0.1', undefined, ['eruda-script']);
-      eruda()?.init();
-    } else {
-      if (eruda()) {
-        eruda().destroy();
-        delete (window as any).eruda;
-      }
-    }
-  };
+  // Render
 
   return (
     <div className='settings-modal'>
@@ -53,7 +40,7 @@ const SettingsModal: React.FC = ()  => {
       </div>
       <div className='item'>
         <span className='label'>Debug</span>
-        <Switch defaultChecked={globalContext.settings.debug} onChange={handleDebug} />
+        <Switch defaultChecked={globalContext.settings.debug} onChange={e => setSettings({ debug: e })} />
       </div>
       <div className='item'>
         <span className='label'>Chart Type</span>
@@ -105,3 +92,25 @@ export default function useSettings() {
 
   return { openModal, modalNode };
 }
+
+export const handleSettingsDebug = async (on: boolean) => {
+  // Clean up
+
+  const oldScripts = document.querySelectorAll('.eruda-script');
+  oldScripts.forEach(script => script?.remove());
+
+  const eruda = () => (window as any)?.eruda;
+
+  if (oldScripts.length > 0) {
+    await waitFor(() => eruda() != null, 100, 1000);
+    eruda()?.destroy();
+    delete (window as any).eruda;
+  }
+
+  // Load
+
+  if (on) {
+    await loadScript('https://cdn.jsdelivr.net/npm/eruda@3.0.1', undefined, ['eruda-script']);
+    eruda()?.init();
+  }
+};

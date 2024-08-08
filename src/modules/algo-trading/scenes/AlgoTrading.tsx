@@ -32,7 +32,7 @@ interface State {
 const initState = (urlMode: UrlMode): State => ({
   inputs: tryParseJson(localStorage.getItem(Globals.cache.algoInputs), jsonDateReviver) || {
     currency: undefined as any,
-    assetCodes: Globals.inputs.assets[urlMode || Globals.inputs.mode],
+    assetCodes: Globals.inputs.getDefaultAssets(urlMode as string),
     initCash: 1000000,
     start: Globals.inputs.start,
     end: Globals.inputs.end,
@@ -101,6 +101,7 @@ const AlgoTrading: React.FC = () => {
         minMargin: state.inputs.minMargin,
       };
       const config: AlgoConfig = {
+        debug: globalContext.settings.debug,
         riskFreeRate: globalContext.settings.riskFreeRate,
         marketBenchmark: globalContext.settings.marketBenchmark,
       };

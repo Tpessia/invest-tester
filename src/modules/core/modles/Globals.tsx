@@ -87,13 +87,18 @@ export const Globals = {
     currencyMap: countries.reduce((acc, c) => ({ ...acc, [c.currency]: c }), {} as Record<string, any>),
   },
   inputs: {
-    mode: 'USD',
     start: normalizeTimezone(getFirstOfYear(addDate(new Date(), -365))),
     end: normalizeTimezone(addDate(getFirstOfYear(new Date()), -1)),
+    modeUrlParam: 'm',
+    mode: 'USD',
     assets: {
       'BRL': ['BOVA11.SA', 'SELIC.SA','TSLA:BRL'],
       'USD': ['TSLA','SAP.DE:USD'],
     } as Record<string, string[]>,
+    getDefaultAssets: function (mode?: string) {
+      const assets = this.assets[mode || this.mode];
+      return assets?.length ? assets : this.assets[this.mode];
+    },
     currencyOrder: ['USD','BRL','EUR','GBP','JPY','CAD','AUD'],
     tickerPopover: (<div style={{ textAlign: 'justify' }}>
       <div>e.g. AAPL, PETR4.SA, EURUSD=X, IPCA.SA, SELIC.SA, IMAB.SA, NTN-B/YYYY.SA, FIXED*0.1, etc.</div>

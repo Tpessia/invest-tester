@@ -21,6 +21,11 @@ export interface AlgoWorkspaceSend {
   index: number;
 }
 
+const validateQuantity = (assetCode: string, quantity: number) => {
+  if (quantity == null || quantity === 0 || quantity === Infinity || isNaN(quantity))
+    throw new Error(`Invalid quantity ${assetCode}:${quantity}`);
+}
+
 export class AlgoWorkspace extends EventLite {
   _algoService?: AlgoService;
 
@@ -67,10 +72,12 @@ export class AlgoWorkspace extends EventLite {
   // Trade
 
   buy(assetCode: string, quantity: number) {
+    validateQuantity(assetCode, quantity);
     this.orders.push({ assetCode, quantity, side: AssetTradeSide.Buy });
   }
 
   sell(assetCode: string, quantity: number) {
+    validateQuantity(assetCode, quantity);
     this.orders.push({ assetCode, quantity, side: AssetTradeSide.Sell });
   }
 

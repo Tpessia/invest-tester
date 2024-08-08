@@ -38,7 +38,7 @@ const initState = (urlMode: UrlMode): State => ({
     initCash: 1000000,
     start: Globals.inputs.start,
     end: Globals.inputs.end,
-    assets: (Globals.inputs.assets[urlMode || Globals.inputs.mode]).map((a, i, arr) => ({ assetCode: a, percentual: i === arr.length - 1 ? 1 - (arr.length - 1) * +(1 / arr.length).toFixed(2) : +(1 / arr.length).toFixed(2) })),
+    assets: Globals.inputs.getDefaultAssets(urlMode as string).map((a, i, arr) => ({ assetCode: a, percentual: i === arr.length - 1 ? 1 - (arr.length - 1) * +(1 / arr.length).toFixed(2) : +(1 / arr.length).toFixed(2) })),
     monthlyDeposits: 0,
     rebalance: false,
     download: false,
@@ -48,7 +48,7 @@ const initState = (urlMode: UrlMode): State => ({
   progress: 0,
 });
 
-const shareLinkParam = 'data';
+const shareUrlParam = 'data';
 
 const Portfolio: React.FC = () => {
   // Dependencies
@@ -68,7 +68,7 @@ const Portfolio: React.FC = () => {
 
   useEffect(() => {
     if (location.search) {
-      const inputs = new URLSearchParams(location.search).get(shareLinkParam);
+      const inputs = new URLSearchParams(location.search).get(shareUrlParam);
       if (inputs) {
         const { assets, initCash, monthlyDeposits, start, end, rebalance, download } = decodeUrlObj(inputs) as State['inputs'];
         setState({ inputs: { $set: { assets, initCash, monthlyDeposits, start, end, rebalance, download } } });
@@ -123,6 +123,7 @@ const Portfolio: React.FC = () => {
         minMargin: 0,
       };
       const config: AlgoConfig = {
+        debug: globalContext.settings.debug,
         riskFreeRate: globalContext.settings.riskFreeRate,
         marketBenchmark: globalContext.settings.marketBenchmark,
       };
@@ -147,7 +148,8 @@ const Portfolio: React.FC = () => {
   const handleShare = () => {
     const urlParams = encodeUrlObj(state.inputs);
     const shareLink = new URL(window.location.href);
-    shareLink.searchParams.append(shareLinkParam, urlParams);
+    shareLink.searchParams.set(Globals.inputs.modeUrlParam, globalContext.currency.currency);
+    shareLink.searchParams.set(shareUrlParam, urlParams);
     navigator.clipboard.writeText(shareLink.toString()).then(
       () => nApi.open({ message: 'Share link copied to clipboard!', duration: 5 }), // description: shareLink
       (err) => nApi.open({ message: 'Error copying share link: ' + err, duration: 5 })

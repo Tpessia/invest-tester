@@ -1,7 +1,7 @@
 import { tryParseJson, tryStringifyJson } from '@utils/index';
 
-export function getErrorMsg(err?: Error | string | any, debug: boolean = false, prefix: string = 'Error: ') {
-  // console.error(err);
+export function getErrorMsg(err?: Error | string | any, debug: boolean = false, log: boolean = true, prefix: string = 'Error: ') {
+  if (log) console.error(err);
 
   const msgNoDebug = (err as Error)?.stack ?? err.toString();
   const msgParts = msgNoDebug.trim().split('\n');

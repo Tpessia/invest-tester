@@ -23,10 +23,17 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
   type TabKey = 'summary' | 'performanceChart' | 'drawdownChart' | 'positionsChart' | 'quantitiesChart' | 'pricesChart' | 'timeseries';
   type TabType = { label: string; key: TabKey; component: () => JSX.Element };
 
+  // State
+
   const [activeTab, setActiveTab] = useState<TabKey>('summary');
   const globalContext = useContext(GlobalContext);
   const layoutContext = useContext(LayoutContext);
+
+  // Dependencies
+
   const formatCurrency = useFormatCurrency();
+
+  // Values
 
   let tabs: TabType[] = [{
     label: 'Summary',
@@ -201,6 +208,8 @@ const Perfomance: React.FC<PerformanceProps> = (props) => {
 
   const tabsDict = keyBy(tabs, e => e.key);
 
+  // Render
+
   return (
     <div className='output-box box-dark'>
       {props.status === 'running' ? (
@@ -240,15 +249,23 @@ interface MessagesProps {
 const Messages: React.FC<MessagesProps> = (props) => {
   type TabKey = 'messages' | 'warnings';
 
+  // State
+
   const [activeTab, setActiveTab] = useState<TabKey>('messages');
+
+  // Effects
 
   useEffect(() => {
     if (props.messages.warnings.length > 0) setActiveTab('warnings');
     else setActiveTab('messages');
   }, [props.messages]);
 
+  // Values
+
   let msgs = activeTab === 'messages' ? props.messages.messages : props.messages.warnings.map(e => `[Warning] ${e}`);
   msgs = props.show ? msgs : ['Backtest Output'];
+
+  // Render
 
   return (
     <div className='output-box box-dark'>

@@ -12,6 +12,7 @@ export interface AlgoInputs {
 }
 
 export interface AlgoConfig {
+  debug?: boolean;
   algoStr?: string;
   isBenchmark?: boolean;
   riskFreeRate?: number;

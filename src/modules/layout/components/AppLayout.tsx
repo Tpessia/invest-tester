@@ -63,11 +63,11 @@ const AppLayout: React.FC<PropsWithChildren> = (props)  => {
     height: window.innerHeight,
     visible: false
   });
+  const globalContext = useContext(GlobalContext);
 
   // Dependencies
 
   const location = useLocation();
-  const globalContext = useContext(GlobalContext);
 
   // Effects
 

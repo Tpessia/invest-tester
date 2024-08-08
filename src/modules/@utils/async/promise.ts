@@ -1,43 +1,43 @@
 export function promiseParallel<T, TRej = T>(tasks: (() => Promise<T>)[], concurrencyLimit: number, noReject: boolean = false): Promise<(T | TRej)[]> {
   return new Promise<(T | TRej)[]>((res, rej) => {
-      if (tasks.length === 0) res([]);
+    if (tasks.length === 0) res([]);
 
-      const results: (T | TRej)[] = [];
-      const pool: Promise<T | TRej>[] = [];
-      let canceled: boolean = false;
+    const results: (T | TRej)[] = [];
+    const pool: Promise<T | TRej>[] = [];
+    let canceled: boolean = false;
 
-      tasks.slice(0, concurrencyLimit).map(e => runPromise(e));
+    tasks.slice(0, concurrencyLimit).map(async (e) => await runPromise(e));
 
-      function runPromise(task: () => Promise<T>): Promise<T | TRej> {
-          let promise: Promise<T | TRej> = task();
+    function runPromise(task: () => Promise<T>): Promise<T | TRej> {
+      let promise: Promise<T | TRej> = task();
 
-          pool.push(promise);
+      pool.push(promise);
 
-          if (noReject) promise = promise.catch((e: TRej) => e);
+      if (noReject) promise = promise.catch((e: TRej) => e);
 
-          promise.then(r => {
-              if (canceled) return;
+      promise = promise.then(async r => {
+        if (canceled) return r;
 
-              results.push(r);
+        results.push(r);
 
-              const poolIndex = pool.indexOf(promise);
-              pool.splice(poolIndex, 1);
+        const poolIndex = pool.indexOf(promise);
+        pool.splice(poolIndex, 1);
 
-              if (tasks.length === results.length)
-                  res(results);
+        if (tasks.length === results.length)
+          res(results);
 
-              const nextIndex = concurrencyLimit + results.length - 1;
-              const nextTask = tasks[nextIndex];
+        const nextIndex = concurrencyLimit + results.length - 1;
+        const nextTask = tasks[nextIndex];
 
-              if (!nextTask) return;
+        if (!nextTask) return r;
 
-              runPromise(nextTask);
-          })
-          
-          if (!noReject) promise.catch(err => { canceled = true; rej(err); });
+        return await runPromise(nextTask);
+      });
 
-          return promise;
-      }
+      if (!noReject) promise = promise.catch(err => { canceled = true; rej(err); return err; });
+
+      return promise;
+    }
   });
 }
 
@@ -58,4 +58,24 @@ export function promiseDeferred<T>(): { promise: Promise<T>, resolve: (value: T)
   let reject: (reason?: any) => void;
   const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
   return { promise, resolve: resolve!, reject: reject! };
+}
+
+export function waitFor(condition: () => boolean, maxRetries?: number, delay: number = 100): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (condition()) {
+      resolve();
+      return;
+    }
+
+    let retries = 0;
+    const interval = setInterval(() => {
+      if (condition()) {
+        clearInterval(interval);
+        resolve();
+      } else if (maxRetries && retries++ >= maxRetries) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, delay);
+  });
 }

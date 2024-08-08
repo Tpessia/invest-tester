@@ -127,8 +127,8 @@ export function strategyBuyHold(props: StrategyBuyHoldProps): AlgoFunction {
 
         const diffAmount = targetValue - currentValue;
         const diffAmountMin = Math.min(diffAmount, cash);
-
         const diffQnt = diffAmountMin > 0 ? Math.floor(diffAmountMin / asset.value) : Math.ceil(diffAmountMin / asset.value);
+
         const currency = asset.currency && (Globals.countries.currencyMap[asset.currency]?.symbol ?? asset.currency);
 
         if (diffQnt > 0) {

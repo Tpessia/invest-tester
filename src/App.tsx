@@ -1,6 +1,7 @@
 import AlgoDocs from '@/modules/algo-docs/scenes/AlgoDocs';
 import AlgoTrading from '@/modules/algo-trading/scenes/AlgoTrading';
 import AppLayout from '@/modules/layout/components/AppLayout';
+import { handleSettingsDebug } from '@/modules/layout/hooks/useSettings';
 import ErrorPage from '@/modules/layout/scenes/ErrorPage';
 import Portfolio from '@/modules/portfolio/scenes/Portfolio';
 import GlobalContext, { GlobalContextType } from '@core/context/GlobalContext';
@@ -21,6 +22,8 @@ const router = createBrowserRouter(
 );
 
 const App: React.FC = () => {
+  // State
+
   const currencyOptions = useMemo(() => orderBy(Globals.countries.countries, [
     e => [...Globals.inputs.currencyOrder].reverse().indexOf(e.currency) * -1,
     'currency',
@@ -30,7 +33,7 @@ const App: React.FC = () => {
     const settings: typeof Globals.settings = tryParseJson(localStorage.getItem(Globals.cache.settings)) ?? Globals.settings;
     const context: GlobalContextType = {
       isBot: new URLSearchParams(window.location.search).get('headless')?.toLowerCase() == 'true',
-      urlMode: new URLSearchParams(window.location.search).get('m')?.toUpperCase(),
+      urlMode: new URLSearchParams(window.location.search).get(Globals.inputs.modeUrlParam)?.toUpperCase(),
       currencyOptions,
       currency: tryParseJson(localStorage.getItem(Globals.cache.currency)) || currencyOptions[0],
       setCurrency: c => {
@@ -46,10 +49,18 @@ const App: React.FC = () => {
     return context;
   });
 
+  // Effects
+
   useEffect(() => {
     if (globalContext.urlMode && !localStorage.getItem(Globals.cache.currency))
       globalContext.setCurrency(globalContext.urlMode as string);
   }, []);
+
+  useEffect(() => {
+    handleSettingsDebug(globalContext.settings.debug);
+  }, [globalContext.settings.debug]);
+
+  // Render
 
   return (
     <GlobalContext.Provider value={{ ...globalContext, setContext: setGlobalContext }}>
