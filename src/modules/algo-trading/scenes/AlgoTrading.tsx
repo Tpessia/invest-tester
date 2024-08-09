@@ -5,17 +5,16 @@ import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
 import { initialCode } from '@/modules/algo-trading/models/AlgoStrategies';
 import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
+import DateRangeGroup from '@/modules/core/components/DatePickerGroup';
 import InfoPopover from '@/modules/core/components/InfoPopover';
 import LayoutContext from '@/modules/layout/context/LayoutContext';
 import CodeEditor from '@core/components/CodeEditor';
-import DateRangePicker from '@core/components/DateRangePicker';
 import InputAddon from '@core/components/InputAddon';
 import InputMask from '@core/components/InputMask';
 import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
 import { fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson, useService, useStateImmutable, useThrottle } from '@utils/index';
 import { Button, Checkbox, Col, Row, Space } from 'antd';
-import dayjs from 'dayjs';
 import { useContext, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import './AlgoTrading.scss';
@@ -32,10 +31,10 @@ interface State {
 const initState = (urlMode: UrlMode): State => ({
   inputs: tryParseJson(localStorage.getItem(Globals.cache.algoInputs), jsonDateReviver) || {
     currency: undefined as any,
-    assetCodes: Globals.inputs.getDefaultAssets(urlMode as string),
     initCash: 1000000,
     start: Globals.inputs.start,
     end: Globals.inputs.end,
+    assetCodes: Globals.inputs.getDefaultAssets(urlMode as string),
     enableLeverage: false,
     initMargin: 0,
     minMargin: 0,
@@ -169,20 +168,11 @@ const AlgoTrading: React.FC = () => {
             />
           </Col>
           <Col xs={24} sm={12} xl={6}>
-            <InputAddon addonBefore='Date' forceUnround>
-              <DateRangePicker
-                suffixIcon={null}
-                allowClear={false}
-                value={[
-                  dayjs(state.inputs.start),
-                  dayjs(state.inputs.end),
-                ]}
-                onChange={(dates, dateStrs) => setState({ inputs: {
-                  start: { $set: dates?.[0]?.toDate() ?? state.inputs.start },
-                  end: { $set: dates?.[1]?.toDate() ?? state.inputs.end },
-                } })}
-              />
-            </InputAddon>
+            <DateRangeGroup
+              maxDate={new Date()}
+              values={[state.inputs.start, state.inputs.end]}
+              onChange={values => setState({ inputs: { start: { $set: values[0] }, end: { $set: values[1] } } })}
+            />
           </Col>
           <Col xs={24} sm={12} xl={3}>
             <InputAddon addWrapper={true}>

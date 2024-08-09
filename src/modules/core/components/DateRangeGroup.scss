@@ -1,0 +1,14 @@
+@import '@/styles/variables.scss';
+
+.date-picker-group {
+   display: flex;
+
+   .date-picker-group-wrapper {
+      display: inline-flex;
+      flex: 1;
+
+      .ant-picker-input input {
+         text-align: center;
+      }
+   }
+}

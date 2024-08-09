@@ -5,8 +5,8 @@ import { AlgoResult } from '@/modules/algo-trading/models/AlgoResult';
 import { AlgoMessages, AlgoStatus, initAlgoMessages } from '@/modules/algo-trading/models/AlgoState';
 import { strategyBuyHold, StrategyBuyHoldProps } from '@/modules/algo-trading/models/AlgoStrategies';
 import { AlgoService } from '@/modules/algo-trading/services/AlgoService';
+import DateRangeGroup from '@/modules/core/components/DatePickerGroup';
 import { MinusOutlined, PlusOutlined, ShareAltOutlined } from '@ant-design/icons';
-import DateRangePicker from '@core/components/DateRangePicker';
 import InfoPopover from '@core/components/InfoPopover';
 import InputAddon from '@core/components/InputAddon';
 import InputMask from '@core/components/InputMask';
@@ -14,7 +14,6 @@ import GlobalContext, { UrlMode } from '@core/context/GlobalContext';
 import { Globals } from '@core/modles/Globals';
 import { decodeUrlObj, encodeUrlObj, fromPercent, getErrorMsg, jsonDateReviver, toPercent, tryParseJson, useService, useStateImmutable, useThrottle } from '@utils/index';
 import { Button, Checkbox, Col, notification, Row, Space } from 'antd';
-import dayjs from 'dayjs';
 import { round, uniqBy } from 'lodash-es';
 import { useContext, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
@@ -51,18 +50,18 @@ const initState = (urlMode: UrlMode): State => ({
 const shareUrlParam = 'data';
 
 const Portfolio: React.FC = () => {
+  // State
+  
+  const globalContext = useContext(GlobalContext);
+  const [state, setState] = useStateImmutable(() => initState(globalContext.urlMode));
+
   // Dependencies
   
   const location = useLocation();
-  const globalContext = useContext(GlobalContext);
-
+  
   const [nApi, nContext] = notification.useNotification();
-
+  
   const algoService = useService(AlgoService);
-
-  // State
-
-  const [state, setState] = useStateImmutable(() => initState(globalContext.urlMode));
 
   // Effects
 
@@ -208,24 +207,11 @@ const Portfolio: React.FC = () => {
               />
             </Col>
             <Col xs={24} sm={24} xl={12}>
-              <InputAddon addonBefore='Date'>
-                <DateRangePicker
-                  suffixIcon={null}
-                  allowClear={false}
-                  value={[
-                    dayjs(state.inputs.start),
-                    dayjs(state.inputs.end),
-                  ]}
-                  onChange={(dates, dateStrs) => setState({ inputs: {
-                    start: { $set: dates?.[0]?.toDate() ?? state.inputs.start },
-                    end: { $set: dates?.[1]?.toDate() ?? state.inputs.end },
-                  } })}
-                  style={{
-                    borderTopLeftRadius: 0,
-                    borderBottomLeftRadius: 0,
-                  }}
-                />
-              </InputAddon>
+              <DateRangeGroup
+                maxDate={new Date()}
+                values={[state.inputs.start, state.inputs.end]}
+                onChange={values => setState({ inputs: { start: { $set: values[0] }, end: { $set: values[1] } } })}
+              />
             </Col>
             <Col xs={24} sm={12} xl={6}>
               <InputAddon addWrapper={true}>
